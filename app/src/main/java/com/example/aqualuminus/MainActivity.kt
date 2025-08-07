@@ -33,7 +33,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 data class SystemStatus(
     val type: StatusType,
@@ -49,7 +60,383 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            AquariumDashboard()
+            AquariumApp()
+        }
+    }
+}
+
+// Main App Composable with Navigation
+@Composable
+fun AquariumApp() {
+    var isLoggedIn by remember { mutableStateOf(false) }
+
+    MaterialTheme {
+        if (isLoggedIn) {
+            AquariumDashboard(
+                onLogout = { isLoggedIn = false }
+            )
+        } else {
+            LoginScreen(
+                onLoginSuccess = { isLoggedIn = true }
+            )
+        }
+    }
+}
+
+// Login Screen
+@Composable
+fun LoginScreen(
+    onLoginSuccess: () -> Unit
+) {
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf("") }
+
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    colors = listOf(
+                        Color(0xFF1E40AF),
+                        Color(0xFF3B82F6),
+                        Color(0xFF60A5FA)
+                    )
+                )
+            )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(24.dp)
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            // Logo/Header Section
+            Card(
+                modifier = Modifier
+                    .size(80.dp)
+                    .clip(CircleShape),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White.copy(alpha = 0.9f)
+                )
+            ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Warning, // WaterDrop,
+                        contentDescription = "Aquarium Logo",
+                        modifier = Modifier.size(40.dp),
+                        tint = Color(0xFF1E40AF)
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Aquarium Controller",
+                style = MaterialTheme.typography.headlineMedium,
+                color = Color.White,
+                fontWeight = FontWeight.Bold
+            )
+
+            Text(
+                text = "IoT Dashboard Login",
+                style = MaterialTheme.typography.bodyLarge,
+                color = Color.White.copy(alpha = 0.9f),
+                modifier = Modifier.padding(top = 8.dp)
+            )
+
+            Spacer(modifier = Modifier.height(48.dp))
+
+            // Login Form Card
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = Color.White
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Sign In",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1F2937)
+                    )
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Username Field
+                    OutlinedTextField(
+                        value = username,
+                        onValueChange = {
+                            username = it
+                            errorMessage = "" // clear error when user types
+                        },
+                        label = { Text("Username") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = "Username"
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Text,
+                            imeAction = ImeAction.Next
+                        ),
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Password Field
+                    OutlinedTextField(
+                        value = password,
+                        onValueChange = {
+                            password = it
+                            errorMessage = "" // Clear error when user types
+                        },
+                        label = { Text("Password") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = "Password"
+                            )
+                        },
+                        trailingIcon = {
+                            IconButton(
+                                onClick = { passwordVisible = !passwordVisible }
+                            ) {
+                                Icon(
+                                    imageVector = if (passwordVisible)
+                                        Icons.Default.Warning // VisibilityOff
+                                    else
+                                        Icons.Default.Warning, // Visibility,
+                                    contentDescription = if (passwordVisible)
+                                        "Hide password"
+                                    else
+                                        "Show password"
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        visualTransformation = if (passwordVisible)
+                            VisualTransformation.None
+                        else
+                            PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Done
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                keyboardController?.hide()
+                                handleLogin(username, password,
+                                    onSuccess = onLoginSuccess,
+                                    onError = { errorMessage = it },
+                                    onLoadingChange = { isLoading = it }
+                                )
+                            }
+                        ),
+                        singleLine = true
+                    )
+
+                    // Error Message
+                    if (errorMessage.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = errorMessage,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Login Button
+                    Button(
+                        onClick = {
+                            keyboardController?.hide()
+                            handleLogin(username, password,
+                                onSuccess = onLoginSuccess,
+                                onError = { errorMessage = it },
+                                onLoadingChange = { isLoading = it }
+                            )
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp),
+                        enabled = !isLoading && username.isNotBlank() && password.isNotBlank(),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF1E40AF)
+                        )
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = Color.White,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text(
+                                text = "Sign In",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
+            }
+        }
+    }
+}
+
+// Login Logic
+fun handleLogin(
+    username: String,
+    password: String,
+    onSuccess: () -> Unit,
+    onError: (String) -> Unit,
+    onLoadingChange: (Boolean) -> Unit
+) {
+    onLoadingChange(true)
+
+    // simulate network call delay
+    kotlinx.coroutines.GlobalScope.launch {
+        delay(1500) // 1.5 second delay
+
+        // simple demo authentication
+        if (username.trim().lowercase() == "admin" && password == "aquarium123") {
+            onSuccess()
+        } else {
+            onError("invalid username or password")
+        }
+
+        onLoadingChange(false)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun AquariumDashboard(
+    onLogout: () -> Unit = {}
+) {
+    var uvLightOn by remember { mutableStateOf(false) }
+    val temperature = 24.5f
+    val waterClarity = 92
+    val systemStatus = SystemStatus(
+        type = StatusType.NORMAL,
+        message = "All Systems Operational"
+    )
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Header with Logout
+        HeaderSection(onLogout = onLogout)
+
+        // UV Light Control
+        UVLightControlCard(
+            uvLightOn = uvLightOn,
+            onUvLightToggle = { uvLightOn = it }
+        )
+
+        // Environmental Monitoring
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            TemperatureCard(
+                temperature = temperature,
+                modifier = Modifier.weight(1f)
+            )
+            WaterClarityCard(
+                waterClarity = waterClarity,
+                modifier = Modifier.weight(1f)
+            )
+        }
+
+        // System Health Status
+        SystemHealthCard(systemStatus = systemStatus)
+
+        // Quick Actions
+        QuickActionsCard()
+    }
+}
+
+@Composable
+fun HeaderSection(onLogout: () -> Unit = {}) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp)
+    ) {
+        // Top Bar with Logout
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Empty space for balance
+            Spacer(modifier = Modifier.width(48.dp))
+
+            // Logout Button
+            TextButton(
+                onClick = onLogout,
+                colors = ButtonDefaults.textButtonColors(
+                    contentColor = Color(0xFF6B7280)
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ExitToApp,
+                    contentDescription = "Logout",
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Logout", fontSize = 14.sp)
+            }
+        }
+
+        // Title Section
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Aquarium UV Cleaner",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "IoT Control Dashboard",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
