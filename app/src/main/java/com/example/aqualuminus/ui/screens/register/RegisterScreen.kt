@@ -1,4 +1,4 @@
-package com.example.aqualuminus.ui.screens.login
+package com.example.aqualuminus.ui.screens.register
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -17,6 +17,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Warning
@@ -47,23 +48,27 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// Login Screen
+// Register Screen
 @Composable
-fun LoginScreen(
-    onLoginSuccess: () -> Unit,
-    onNavigateToRegister: () -> Unit = {},
-    viewModel: LoginViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
-
+fun RegisterScreen(
+    onRegisterSuccess: () -> Unit,
+    onNavigateToLogin: () -> Unit,
+    viewModel: RegisterViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     var username by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
+    var confirmPasswordVisible by remember { mutableStateOf(false) }
 
     val isLoading by viewModel.isLoading
     val errorMessage by viewModel.errorMessage
+    val successMessage by viewModel.successMessage
 
     val keyboardController = LocalSoftwareKeyboardController.current
 
@@ -120,7 +125,7 @@ fun LoginScreen(
             )
 
             Text(
-                text = "IoT Dashboard Login",
+                text = "Create Your IoT Account",
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.White.copy(alpha = 0.9f),
                 modifier = Modifier.padding(top = 8.dp)
@@ -128,7 +133,7 @@ fun LoginScreen(
 
             Spacer(modifier = Modifier.height(48.dp))
 
-            // Login Form Card
+            // Register Form Card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -145,7 +150,7 @@ fun LoginScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Sign In",
+                        text = "Create Account",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1F2937)
@@ -158,7 +163,7 @@ fun LoginScreen(
                         value = username,
                         onValueChange = {
                             username = it
-                            viewModel.clearError()
+                            viewModel.clearMessages()
                         },
                         label = { Text("Username") },
                         leadingIcon = {
@@ -177,12 +182,36 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    // Email Field
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = {
+                            email = it
+                            viewModel.clearMessages()
+                        },
+                        label = { Text("Email") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Email,
+                                contentDescription = "Email"
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Email,
+                            imeAction = ImeAction.Next
+                        ),
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
                     // Password Field
                     OutlinedTextField(
                         value = password,
                         onValueChange = {
                             password = it
-                            viewModel.clearError()
+                            viewModel.clearMessages()
                         },
                         label = { Text("Password") },
                         leadingIcon = {
@@ -196,10 +225,7 @@ fun LoginScreen(
                                 onClick = { passwordVisible = !passwordVisible }
                             ) {
                                 Icon(
-                                    imageVector = if (passwordVisible)
-                                        Icons.Default.Warning // VisibilityOff
-                                    else
-                                        Icons.Default.Warning, // VisibilityOn,
+                                    imageVector = Icons.Default.Warning,
                                     contentDescription = if (passwordVisible)
                                         "Hide password"
                                     else
@@ -214,12 +240,53 @@ fun LoginScreen(
                             PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Password,
+                            imeAction = ImeAction.Next
+                        ),
+                        singleLine = true
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Confirm Password Field
+                    OutlinedTextField(
+                        value = confirmPassword,
+                        onValueChange = {
+                            confirmPassword = it
+                            viewModel.clearMessages()
+                        },
+                        label = { Text("Confirm Password") },
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.Lock,
+                                contentDescription = "Confirm Password"
+                            )
+                        },
+                        trailingIcon = {
+                            IconButton(
+                                onClick = { confirmPasswordVisible = !confirmPasswordVisible }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Warning,
+                                    contentDescription = if (confirmPasswordVisible)
+                                        "Hide password"
+                                    else
+                                        "Show password"
+                                )
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        visualTransformation = if (confirmPasswordVisible)
+                            VisualTransformation.None
+                        else
+                            PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Password,
                             imeAction = ImeAction.Done
                         ),
                         keyboardActions = KeyboardActions(
                             onDone = {
                                 keyboardController?.hide()
-                                viewModel.login(username, password, onLoginSuccess)
+                                viewModel.register(username, email, password, confirmPassword, onRegisterSuccess)
                             }
                         ),
                         singleLine = true
@@ -236,18 +303,33 @@ fun LoginScreen(
                         )
                     }
 
+                    // Success Message
+                    if (successMessage.isNotEmpty()) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = successMessage,
+                            color = Color(0xFF16A34A),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Login Button
+                    // Register Button
                     Button(
                         onClick = {
                             keyboardController?.hide()
-                            viewModel.login(username, password, onLoginSuccess)
+                            viewModel.register(username, email, password, confirmPassword, onRegisterSuccess)
                         },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
-                        enabled = !isLoading && username.isNotBlank() && password.isNotBlank(),
+                        enabled = !isLoading &&
+                                username.isNotBlank() &&
+                                email.isNotBlank() &&
+                                password.isNotBlank() &&
+                                confirmPassword.isNotBlank(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF1E40AF)
                         )
@@ -260,7 +342,7 @@ fun LoginScreen(
                             )
                         } else {
                             Text(
-                                text = "Sign In",
+                                text = "Create Account",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -269,27 +351,27 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Create Account Link
+                    // Sign In Link
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Don't have an account?",
+                            text = "Already have an account?",
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color(0xFF6B7280)
                         )
 
                         OutlinedButton(
-                            onClick = onNavigateToRegister,
+                            onClick = onNavigateToLogin,
                             modifier = Modifier.padding(start = 8.dp),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 contentColor = Color(0xFF1E40AF)
                             )
                         ) {
                             Text(
-                                text = "Create Account",
+                                text = "Sign In",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Medium
                             )

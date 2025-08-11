@@ -21,7 +21,7 @@ class LoginViewModel : ViewModel() {
             if (username.trim().lowercase() == "admin" && password == "aquarium123") {
                 onSuccess()
             } else {
-                _errorMessage.value = "invalid username or password"
+                _errorMessage.value = "Invalid username or password"
             }
             _isLoading.value = false
         }
