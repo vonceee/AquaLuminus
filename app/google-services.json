@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "333359331425",
+    "project_id": "aqualuminus-mobile-app",
+    "storage_bucket": "aqualuminus-mobile-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:333359331425:android:8cfe38ab93a61cfdeb1220",
+        "android_client_info": {
+          "package_name": "com.example.aqualuminus"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDSWX_HIfNGhIg7X1c612tvoKID5C7Cook"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

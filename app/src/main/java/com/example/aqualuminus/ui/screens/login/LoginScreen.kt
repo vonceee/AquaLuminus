@@ -17,8 +17,8 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -50,15 +50,13 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// Login Screen
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onNavigateToRegister: () -> Unit = {},
     viewModel: LoginViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
-
 ) {
-    var username by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
@@ -102,7 +100,7 @@ fun LoginScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Warning, // WaterDrop,
+                        imageVector = Icons.Default.Warning, // Replace with WaterDrop icon
                         contentDescription = "Aquarium Logo",
                         modifier = Modifier.size(40.dp),
                         tint = Color(0xFF1E40AF)
@@ -113,14 +111,14 @@ fun LoginScreen(
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Aquarium Controller",
+                text = "AquaLuminus",
                 style = MaterialTheme.typography.headlineMedium,
                 color = Color.White,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
-                text = "IoT Dashboard Login",
+                text = "Smart Aquarium Controller",
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.White.copy(alpha = 0.9f),
                 modifier = Modifier.padding(top = 8.dp)
@@ -145,7 +143,7 @@ fun LoginScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "Sign In",
+                        text = "Welcome Back",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFF1F2937)
@@ -153,23 +151,23 @@ fun LoginScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Username Field
+                    // Email Field
                     OutlinedTextField(
-                        value = username,
+                        value = email,
                         onValueChange = {
-                            username = it
+                            email = it
                             viewModel.clearError()
                         },
-                        label = { Text("Username") },
+                        label = { Text("Email") },
                         leadingIcon = {
                             Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = "Username"
+                                imageVector = Icons.Default.Email,
+                                contentDescription = "Email"
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Text,
+                            keyboardType = KeyboardType.Email,
                             imeAction = ImeAction.Next
                         ),
                         singleLine = true
@@ -197,9 +195,9 @@ fun LoginScreen(
                             ) {
                                 Icon(
                                     imageVector = if (passwordVisible)
-                                        Icons.Default.Warning // VisibilityOff
+                                        Icons.Default.Warning // replace w/VisibilityOff Icon
                                     else
-                                        Icons.Default.Warning, // VisibilityOn,
+                                        Icons.Default.Warning, // replace w/VisibilityOn Icon
                                     contentDescription = if (passwordVisible)
                                         "Hide password"
                                     else
@@ -219,7 +217,7 @@ fun LoginScreen(
                         keyboardActions = KeyboardActions(
                             onDone = {
                                 keyboardController?.hide()
-                                viewModel.login(username, password, onLoginSuccess)
+                                viewModel.login(email, password, onLoginSuccess)
                             }
                         ),
                         singleLine = true
@@ -242,12 +240,12 @@ fun LoginScreen(
                     Button(
                         onClick = {
                             keyboardController?.hide()
-                            viewModel.login(username, password, onLoginSuccess)
+                            viewModel.login(email, password, onLoginSuccess)
                         },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(50.dp),
-                        enabled = !isLoading && username.isNotBlank() && password.isNotBlank(),
+                        enabled = !isLoading && email.isNotBlank() && password.isNotBlank(),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color(0xFF1E40AF)
                         )
@@ -289,7 +287,7 @@ fun LoginScreen(
                             )
                         ) {
                             Text(
-                                text = "Create Account",
+                                text = "Sign Up",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Medium
                             )
