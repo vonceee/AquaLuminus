@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.aqualuminus.ui.screens.dashboard.components.HeaderSection
 import com.example.aqualuminus.ui.screens.dashboard.components.QuickActionsCard
 import com.example.aqualuminus.ui.screens.dashboard.components.SystemHealthCard
@@ -28,9 +29,14 @@ import com.example.aqualuminus.ui.screens.dashboard.model.SystemStatus
 
 @Composable
 fun AquariumDashboard(
-    user: com.google.firebase.auth.FirebaseUser? = null,
-    onLogout: () -> Unit = {}
+    onProfileClick: () -> Unit = {},
+    onLogout: () -> Unit = {},
+    dashboardViewModel: DashboardViewModel = viewModel()
 ) {
+    // Get user data from ViewModel
+    val userName = dashboardViewModel.userName
+    val userPhotoUrl = dashboardViewModel.userPhotoUrl
+
     var uvLightOn by remember { mutableStateOf(false) }
     val temperature = 24.5f
     val waterClarity = 92
@@ -46,8 +52,13 @@ fun AquariumDashboard(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header with Logout
-        HeaderSection(onLogout = onLogout)
+        // Header with User Greeting, Profile Picture, and Logout
+        HeaderSection(
+            userName = userName,
+            userPhotoUrl = userPhotoUrl,
+            onProfileClick = onProfileClick,
+            onLogout = onLogout
+        )
 
         // UV Light Control
         UVLightControlCard(

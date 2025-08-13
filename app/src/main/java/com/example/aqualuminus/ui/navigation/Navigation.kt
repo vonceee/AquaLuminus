@@ -9,12 +9,14 @@ import androidx.navigation.compose.rememberNavController
 import com.example.aqualuminus.data.auth.AuthState
 import com.example.aqualuminus.ui.screens.dashboard.AquariumDashboard
 import com.example.aqualuminus.ui.screens.login.LoginScreen
+import com.example.aqualuminus.ui.screens.profile.ProfileScreen
 import com.example.aqualuminus.ui.screens.register.RegisterScreen
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Dashboard : Screen("dashboard")
     object Register : Screen("register")
+    object Profile : Screen("profile")
 }
 
 @Composable
@@ -35,9 +37,11 @@ fun AquariumNavGraph(
             }
             is AuthState.Unauthenticated -> {
                 // User is logged out, navigate to login
-                if (navController.currentDestination?.route == Screen.Dashboard.route) {
+                if (navController.currentDestination?.route == Screen.Dashboard.route ||
+                    navController.currentDestination?.route == Screen.Profile.route) {
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Dashboard.route) { inclusive = true }
+                        popUpTo(Screen.Profile.route) { inclusive = true }
                     }
                 }
             }
@@ -82,10 +86,22 @@ fun AquariumNavGraph(
 
         composable(Screen.Dashboard.route) {
             AquariumDashboard(
-                user = (authState as? AuthState.Authenticated)?.user,
+                onProfileClick = {
+                    // Navigate to profile screen
+                    navController.navigate(Screen.Profile.route)
+                },
                 onLogout = {
                     onSignOut()
                     // Firebase Auth state will automatically trigger navigation to login
+                }
+            )
+        }
+
+        composable(Screen.Profile.route) {
+            ProfileScreen(
+                user = (authState as? AuthState.Authenticated)?.user,
+                onBackClick = {
+                    navController.popBackStack()
                 }
             )
         }
