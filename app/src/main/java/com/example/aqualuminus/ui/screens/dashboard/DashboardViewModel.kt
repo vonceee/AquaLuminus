@@ -34,6 +34,14 @@ class DashboardViewModel : ViewModel() {
         }
     }
 
+    // Method to refresh user data (useful after profile updates)
+    fun refreshUserData() {
+        // Reload the current user to get the latest data from Firebase
+        auth.currentUser?.reload()?.addOnCompleteListener {
+            loadUserData()
+        }
+    }
+
     fun getCurrentUser(): FirebaseUser? {
         return auth.currentUser
     }

@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.aqualuminus.data.repository.FirebaseAuthRepository
+import com.google.firebase.auth.userProfileChangeRequest
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -47,15 +48,26 @@ class RegisterViewModel : ViewModel() {
 
                 result.fold(
                     onSuccess = { user ->
-                        // Optional: Update user profile with username
-                        // user.updateProfile(userProfileChangeRequest { displayName = username })
+                        // Update user profile with username
+                        val profileUpdates = userProfileChangeRequest {
+                            displayName = username
+                        }
 
-                        _successMessage.value = "Account created successfully!"
-                        _isLoading.value = false
+                        user.updateProfile(profileUpdates).addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                _successMessage.value = "Account created successfully!"
+                                _isLoading.value = false
 
-                        // Auto-navigate after showing success message
-                        delay(1500)
-                        onSuccess()
+                                // Auto-navigate after showing success message
+                                viewModelScope.launch {
+                                    delay(1500)
+                                    onSuccess()
+                                }
+                            } else {
+                                _errorMessage.value = "Failed to update profile. Please try again."
+                                _isLoading.value = false
+                            }
+                        }
                     },
                     onFailure = { exception ->
                         _errorMessage.value = authRepository.getFirebaseErrorMessage(exception as Exception)

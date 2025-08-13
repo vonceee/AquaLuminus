@@ -119,12 +119,6 @@ fun ProfileScreen(
                         value = user?.email ?: "Not available"
                     )
 
-                    // User ID (first 8 characters for privacy)
-                    ProfileInfoRow(
-                        label = "User ID",
-                        value = user?.uid?.take(8) + "..." ?: "Not available"
-                    )
-
                     // Email Verified Status
                     ProfileInfoRow(
                         label = "Email Verified",
