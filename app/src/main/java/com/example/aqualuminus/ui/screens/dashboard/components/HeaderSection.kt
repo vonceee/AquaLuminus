@@ -55,7 +55,7 @@ fun HeaderSection(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Profile picture + Greeting/Name
+            // Profile Picture + Greeting/Name
             Row(verticalAlignment = Alignment.CenterVertically) {
                 // Profile Picture
                 Box(
@@ -87,7 +87,7 @@ fun HeaderSection(
 
                 Spacer(modifier = Modifier.width(12.dp))
 
-                // Greeting and username
+                // Greeting and Username
                 Column {
                     Text(
                         text = "Hello",
@@ -104,7 +104,7 @@ fun HeaderSection(
                 }
             }
 
-            // Logout button
+            // Logout Button
             TextButton(
                 onClick = onLogout,
                 colors = ButtonDefaults.textButtonColors(

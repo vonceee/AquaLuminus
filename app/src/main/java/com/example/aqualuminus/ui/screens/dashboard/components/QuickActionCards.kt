@@ -26,7 +26,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun QuickActionsCard() {
+fun QuickActionsCard(
+    onScheduleCleanClick: () -> Unit = {} // New parameter for handling navigation
+) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -53,7 +55,7 @@ fun QuickActionsCard() {
                     label = "Water Test",
                     iconColor = Color(0xFF3B82F6),
                     modifier = Modifier.weight(1f),
-                    onClick = { /* Handle water test */ }
+                    onClick = { /* Handle water test - you can add navigation later */ }
                 )
 
                 QuickActionButton(
@@ -61,7 +63,7 @@ fun QuickActionsCard() {
                     label = "Schedule Clean",
                     iconColor = Color(0xFF10B981),
                     modifier = Modifier.weight(1f),
-                    onClick = { /* Handle schedule clean */ }
+                    onClick = onScheduleCleanClick
                 )
             }
         }

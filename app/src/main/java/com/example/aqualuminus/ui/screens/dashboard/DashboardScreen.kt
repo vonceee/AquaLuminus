@@ -31,6 +31,7 @@ import com.example.aqualuminus.ui.screens.dashboard.model.SystemStatus
 fun AquariumDashboard(
     onProfileClick: () -> Unit = {},
     onLogout: () -> Unit = {},
+    onScheduleCleanClick: () -> Unit = {},
     dashboardViewModel: DashboardViewModel = viewModel()
 ) {
     // Get user data from ViewModel
@@ -85,7 +86,9 @@ fun AquariumDashboard(
         SystemHealthCard(systemStatus = systemStatus)
 
         // Quick Actions
-        QuickActionsCard()
+        QuickActionsCard(
+            onScheduleCleanClick = onScheduleCleanClick
+        )
     }
 }
 

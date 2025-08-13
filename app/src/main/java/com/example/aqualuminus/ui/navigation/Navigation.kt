@@ -11,12 +11,14 @@ import com.example.aqualuminus.ui.screens.dashboard.AquariumDashboard
 import com.example.aqualuminus.ui.screens.login.LoginScreen
 import com.example.aqualuminus.ui.screens.profile.ProfileScreen
 import com.example.aqualuminus.ui.screens.register.RegisterScreen
+import com.example.aqualuminus.ui.screens.schedule.ScheduleCleanScreen
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Dashboard : Screen("dashboard")
     object Register : Screen("register")
     object Profile : Screen("profile")
+    object ScheduleClean : Screen("schedule_clean")
 }
 
 @Composable
@@ -38,10 +40,12 @@ fun AquariumNavGraph(
             is AuthState.Unauthenticated -> {
                 // User is logged out, navigate to login
                 if (navController.currentDestination?.route == Screen.Dashboard.route ||
-                    navController.currentDestination?.route == Screen.Profile.route) {
+                    navController.currentDestination?.route == Screen.Profile.route ||
+                    navController.currentDestination?.route == Screen.ScheduleClean.route) {
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Dashboard.route) { inclusive = true }
                         popUpTo(Screen.Profile.route) { inclusive = true }
+                        popUpTo(Screen.ScheduleClean.route) { inclusive = true }
                     }
                 }
             }
@@ -87,12 +91,13 @@ fun AquariumNavGraph(
         composable(Screen.Dashboard.route) {
             AquariumDashboard(
                 onProfileClick = {
-                    // Navigate to profile screen
                     navController.navigate(Screen.Profile.route)
                 },
                 onLogout = {
                     onSignOut()
-                    // Firebase Auth state will automatically trigger navigation to login
+                },
+                onScheduleCleanClick = {
+                    navController.navigate(Screen.ScheduleClean.route)
                 }
             )
         }
@@ -100,6 +105,14 @@ fun AquariumNavGraph(
         composable(Screen.Profile.route) {
             ProfileScreen(
                 user = (authState as? AuthState.Authenticated)?.user,
+                onBackClick = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.ScheduleClean.route) {
+            ScheduleCleanScreen(
                 onBackClick = {
                     navController.popBackStack()
                 }
