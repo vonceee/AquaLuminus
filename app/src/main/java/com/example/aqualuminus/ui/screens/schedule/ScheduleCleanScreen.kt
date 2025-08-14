@@ -27,6 +27,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -34,6 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -58,7 +60,7 @@ import java.util.Calendar
 
 @Composable
 fun ScheduleCleanScreen(
-    onBackClick: () -> Unit,
+    onBackClick: () -> Unit = {},
 ) {
     val currentTime = Calendar.getInstance()
     var selectedHour by remember { mutableIntStateOf(currentTime.get(Calendar.HOUR)) }
@@ -77,7 +79,8 @@ fun ScheduleCleanScreen(
                 title = {
                     Text(
                         text = "Schedule Cleaning",
-                        style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
                     )
                 },
                 navigationIcon = {
@@ -96,8 +99,12 @@ fun ScheduleCleanScreen(
         },
         bottomBar = {
             Surface(
-                tonalElevation = 3.dp,
-                shadowElevation = 6.dp
+                tonalElevation = 0.dp,
+                shadowElevation = 0.dp,
+                modifier = Modifier.border(
+                    1.dp,
+                    MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                )
             ) {
                 Row(
                     modifier = Modifier
@@ -133,7 +140,12 @@ fun ScheduleCleanScreen(
                         },
                         enabled = selectedDays.isNotEmpty(),
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = ButtonDefaults.buttonElevation(0.dp),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                        )
                     ) {
                         Text("Save Schedule")
                     }
@@ -152,7 +164,14 @@ fun ScheduleCleanScreen(
             // Days Selector
             Card(
                 shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(4.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                ),
+                elevation = CardDefaults.cardElevation(0.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -160,7 +179,8 @@ fun ScheduleCleanScreen(
                 ) {
                     Text(
                         text = "Select Days",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
 
@@ -184,7 +204,7 @@ fun ScheduleCleanScreen(
                                         color = if (selectedDays.contains(index))
                                             MaterialTheme.colorScheme.primary
                                         else
-                                            MaterialTheme.colorScheme.outline,
+                                            MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
                                         shape = CircleShape
                                     )
                                     .clickable {
@@ -198,9 +218,8 @@ fun ScheduleCleanScreen(
                             ) {
                                 Text(
                                     text = day,
-                                    style = MaterialTheme.typography.bodyMedium.copy(
-                                        fontWeight = FontWeight.Medium
-                                    ),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
                                     color = if (selectedDays.contains(index))
                                         MaterialTheme.colorScheme.onPrimary
                                     else
@@ -230,7 +249,14 @@ fun ScheduleCleanScreen(
             // Time Picker
             Card(
                 shape = RoundedCornerShape(16.dp),
-                elevation = CardDefaults.cardElevation(4.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                ),
+                elevation = CardDefaults.cardElevation(0.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -239,7 +265,8 @@ fun ScheduleCleanScreen(
                 ) {
                     Text(
                         text = "Select Time",
-                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.padding(bottom = 20.dp)
                     )
 
@@ -248,10 +275,9 @@ fun ScheduleCleanScreen(
                     val amPmText = if (selectedAmPm == 0) "AM" else "PM"
                     Text(
                         text = String.format("%02d:%02d %s", displayHour, selectedMinute, amPmText),
-                        style = MaterialTheme.typography.headlineMedium.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        ),
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(bottom = 20.dp)
                     )
 
@@ -272,10 +298,9 @@ fun ScheduleCleanScreen(
                         // Separator
                         Text(
                             text = ":",
-                            style = MaterialTheme.typography.headlineSmall.copy(
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            ),
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(horizontal = 4.dp)
                         )
 
@@ -307,7 +332,11 @@ fun ScheduleCleanScreen(
                 placeholder = { Text("e.g., Weekly Tank Cleaning") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                shape = RoundedCornerShape(12.dp)
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                    focusedBorderColor = MaterialTheme.colorScheme.primary
+                )
             )
 
             if (selectedDays.isEmpty()) {
@@ -370,7 +399,12 @@ private fun NumberPicker(
             modifier = Modifier
                 .height(itemHeight * visibleItemsCount)
                 .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+                .background(MaterialTheme.colorScheme.surface)
+                .border(
+                    1.dp,
+                    MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                    RoundedCornerShape(12.dp)
+                ),
             contentAlignment = Alignment.Center
         ) {
             LazyColumn(
@@ -418,7 +452,7 @@ private fun NumberPicker(
                     .fillMaxWidth()
                     .height(itemHeight)
                     .background(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
                         RoundedCornerShape(8.dp)
                     )
                     .border(
@@ -467,7 +501,12 @@ private fun AmPmPicker(
             modifier = Modifier
                 .height(itemHeight * 3)
                 .clip(RoundedCornerShape(12.dp))
-                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+                .background(MaterialTheme.colorScheme.surface)
+                .border(
+                    1.dp,
+                    MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                    RoundedCornerShape(12.dp)
+                ),
             contentAlignment = Alignment.Center
         ) {
             LazyColumn(
@@ -515,7 +554,7 @@ private fun AmPmPicker(
                     .fillMaxWidth()
                     .height(itemHeight)
                     .background(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f),
+                        MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
                         RoundedCornerShape(8.dp)
                     )
                     .border(
@@ -532,6 +571,6 @@ private fun AmPmPicker(
 @Composable
 fun PreviewScheduleCleanScreen() {
     MaterialTheme {
-        ScheduleCleanScreen({})
+        ScheduleCleanScreen()
     }
 }
