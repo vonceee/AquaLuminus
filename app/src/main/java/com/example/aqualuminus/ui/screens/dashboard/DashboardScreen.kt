@@ -32,6 +32,7 @@ fun AquariumDashboard(
     onProfileClick: () -> Unit = {},
     onLogout: () -> Unit = {},
     onScheduleCleanClick: () -> Unit = {},
+    onWaterTestClick: () -> Unit = {},
     dashboardViewModel: DashboardViewModel = viewModel()
 ) {
     // Get user data from ViewModel
@@ -87,7 +88,8 @@ fun AquariumDashboard(
 
         // Quick Actions
         QuickActionsCard(
-            onScheduleCleanClick = onScheduleCleanClick
+            onScheduleCleanClick = onScheduleCleanClick,
+            onWaterTestClick = onWaterTestClick
         )
     }
 }

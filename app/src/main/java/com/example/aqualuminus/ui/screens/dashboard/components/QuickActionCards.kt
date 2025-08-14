@@ -27,7 +27,8 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun QuickActionsCard(
-    onScheduleCleanClick: () -> Unit = {} // New parameter for handling navigation
+    onScheduleCleanClick: () -> Unit = {},
+    onWaterTestClick: () -> Unit = {}
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -55,7 +56,7 @@ fun QuickActionsCard(
                     label = "Water Test",
                     iconColor = Color(0xFF3B82F6),
                     modifier = Modifier.weight(1f),
-                    onClick = { /* Handle water test - you can add navigation later */ }
+                    onClick = onWaterTestClick
                 )
 
                 QuickActionButton(
