@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Warning
@@ -30,7 +31,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.example.aqualuminus.ui.screens.dashboard.model.StatusType
 import com.example.aqualuminus.ui.screens.dashboard.model.SystemStatus
 
@@ -40,10 +40,16 @@ fun SystemHealthCard(systemStatus: SystemStatus) {
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
-        )
+        ),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp,
+            MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+        ),
+        elevation = CardDefaults.cardElevation(0.dp),
+        shape = RoundedCornerShape(16.dp)
     ) {
         Column(
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier.padding(20.dp)
         ) {
             // Card Header
             Row(
@@ -52,12 +58,15 @@ fun SystemHealthCard(systemStatus: SystemStatus) {
             ) {
                 Icon(
                     imageVector = Icons.Default.Warning,
-                    contentDescription = "System Health"
+                    contentDescription = "System Health",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
                 )
                 Text(
                     text = "System Health",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -71,7 +80,8 @@ fun SystemHealthCard(systemStatus: SystemStatus) {
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.weight(1f)
                 ) {
                     Icon(
                         imageVector = getStatusIcon(systemStatus.type),
@@ -81,7 +91,9 @@ fun SystemHealthCard(systemStatus: SystemStatus) {
                     )
                     Text(
                         text = systemStatus.message,
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        fontWeight = FontWeight.Medium
                     )
                 }
 
@@ -90,18 +102,26 @@ fun SystemHealthCard(systemStatus: SystemStatus) {
                     label = {
                         Text(
                             text = systemStatus.type.name,
-                            fontSize = 12.sp
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.SemiBold
                         )
                     },
                     colors = AssistChipDefaults.assistChipColors(
                         containerColor = getStatusColor(systemStatus.type).copy(alpha = 0.1f),
                         labelColor = getStatusColor(systemStatus.type)
-                    )
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        getStatusColor(systemStatus.type).copy(alpha = 0.2f)
+                    ),
+                    shape = RoundedCornerShape(12.dp)
                 )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
-            HorizontalDivider()
+            HorizontalDivider(
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+            )
             Spacer(modifier = Modifier.height(16.dp))
 
             // Additional Status Items
@@ -113,7 +133,7 @@ fun SystemHealthCard(systemStatus: SystemStatus) {
                     value = {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
                             Box(
                                 modifier = Modifier
@@ -121,19 +141,38 @@ fun SystemHealthCard(systemStatus: SystemStatus) {
                                     .clip(CircleShape)
                                     .background(Color(0xFF10B981))
                             )
-                            Text(text = "Connected")
+                            Text(
+                                text = "Connected",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                fontWeight = FontWeight.Medium
+                            )
                         }
                     }
                 )
 
                 StatusRow(
                     label = "Last Maintenance",
-                    value = { Text(text = "3 days ago") }
+                    value = {
+                        Text(
+                            text = "3 days ago",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 )
 
                 StatusRow(
                     label = "Filter Life",
-                    value = { Text(text = "78% remaining") }
+                    value = {
+                        Text(
+                            text = "78% remaining",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 )
             }
         }
@@ -153,7 +192,8 @@ fun StatusRow(
         Text(
             text = label,
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Medium
         )
         value()
     }
