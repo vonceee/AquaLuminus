@@ -31,18 +31,18 @@ fun AquariumNavGraph(
     onSignOut: () -> Unit,
     navController: NavHostController = rememberNavController()
 ) {
-    // Auto-navigate based on auth state
+    // auto-navigate based on auth state
     LaunchedEffect(authState) {
         when (authState) {
             is AuthState.Authenticated -> {
-                // User is logged in, navigate to dashboard
+                // user is logged in, navigate to dashboard
                 navController.navigate(Screen.Dashboard.route) {
                     popUpTo(Screen.Login.route) { inclusive = true }
                     popUpTo(Screen.Register.route) { inclusive = true }
                 }
             }
             is AuthState.Unauthenticated -> {
-                // User is logged out, navigate to login
+                // user is logged out, navigate to login
                 if (navController.currentDestination?.route == Screen.Dashboard.route ||
                     navController.currentDestination?.route == Screen.Profile.route ||
                     navController.currentDestination?.route == Screen.SchedulesList.route ||
@@ -60,7 +60,7 @@ fun AquariumNavGraph(
         }
     }
 
-    // Determine start destination based on auth state
+    // determine start destination based on auth state
     val startDestination = when (authState) {
         is AuthState.Authenticated -> Screen.Dashboard.route
         is AuthState.Unauthenticated -> Screen.Login.route
@@ -73,8 +73,7 @@ fun AquariumNavGraph(
         composable(Screen.Login.route) {
             LoginScreen(
                 onLoginSuccess = {
-                    // Firebase Auth state will automatically trigger navigation
-                    // No manual navigation needed here
+                    // firebase auth will trigger navigation, no manual navigation needed
                 },
                 onNavigateToRegister = {
                     navController.navigate(Screen.Register.route)
@@ -85,7 +84,6 @@ fun AquariumNavGraph(
         composable(Screen.Register.route) {
             RegisterScreen(
                 onRegisterSuccess = {
-                    // After successful registration, go back to login
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Register.route) { inclusive = true }
                     }
@@ -131,7 +129,7 @@ fun AquariumNavGraph(
                     navController.navigate(Screen.ScheduleClean.route)
                 },
                 onEditScheduleClick = { scheduleId ->
-                    // Navigate to edit screen with schedule ID
+                    // navigate to edit screen with schedule ID
                     navController.navigate("${Screen.ScheduleClean.route}?scheduleId=$scheduleId")
                 }
             )

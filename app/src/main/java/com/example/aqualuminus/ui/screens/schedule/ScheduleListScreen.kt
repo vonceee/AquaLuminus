@@ -242,7 +242,7 @@ private fun ScheduleCard(
         Column(
             modifier = Modifier.padding(20.dp)
         ) {
-            // Header with name and controls
+            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -375,7 +375,7 @@ private fun ScheduleCard(
                 }
             }
 
-            // Status and indicator
+            // Status
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,

@@ -35,7 +35,6 @@ fun AquariumDashboard(
     onWaterTestClick: () -> Unit = {},
     dashboardViewModel: DashboardViewModel = viewModel()
 ) {
-    // Get user data from ViewModel
     val userName = dashboardViewModel.userName
     val userPhotoUrl = dashboardViewModel.userPhotoUrl
 
