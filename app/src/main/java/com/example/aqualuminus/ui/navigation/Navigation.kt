@@ -12,6 +12,7 @@ import com.example.aqualuminus.ui.screens.login.LoginScreen
 import com.example.aqualuminus.ui.screens.profile.ProfileScreen
 import com.example.aqualuminus.ui.screens.register.RegisterScreen
 import com.example.aqualuminus.ui.screens.schedule.ScheduleCleanScreen
+import com.example.aqualuminus.ui.screens.schedule.SchedulesListScreen
 import com.example.aqualuminus.ui.screens.watertest.WaterTestScreen
 
 sealed class Screen(val route: String) {
@@ -19,6 +20,7 @@ sealed class Screen(val route: String) {
     object Dashboard : Screen("dashboard")
     object Register : Screen("register")
     object Profile : Screen("profile")
+    object SchedulesList : Screen("schedules_list")
     object ScheduleClean : Screen("schedule_clean")
     object WaterTest : Screen("water_test")
 }
@@ -43,11 +45,13 @@ fun AquariumNavGraph(
                 // User is logged out, navigate to login
                 if (navController.currentDestination?.route == Screen.Dashboard.route ||
                     navController.currentDestination?.route == Screen.Profile.route ||
+                    navController.currentDestination?.route == Screen.SchedulesList.route ||
                     navController.currentDestination?.route == Screen.ScheduleClean.route ||
                     navController.currentDestination?.route == Screen.WaterTest.route) {
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Dashboard.route) { inclusive = true }
                         popUpTo(Screen.Profile.route) { inclusive = true }
+                        popUpTo(Screen.SchedulesList.route) { inclusive = true }
                         popUpTo(Screen.ScheduleClean.route) { inclusive = true }
                         popUpTo(Screen.WaterTest.route) { inclusive = true }
                     }
@@ -101,7 +105,7 @@ fun AquariumNavGraph(
                     onSignOut()
                 },
                 onScheduleCleanClick = {
-                    navController.navigate(Screen.ScheduleClean.route)
+                    navController.navigate(Screen.SchedulesList.route)
                 },
                 onWaterTestClick = {
                     navController.navigate(Screen.WaterTest.route)
@@ -114,6 +118,21 @@ fun AquariumNavGraph(
                 user = (authState as? AuthState.Authenticated)?.user,
                 onBackClick = {
                     navController.popBackStack()
+                }
+            )
+        }
+
+        composable(Screen.SchedulesList.route) {
+            SchedulesListScreen(
+                onBackClick = {
+                    navController.popBackStack()
+                },
+                onCreateNewClick = {
+                    navController.navigate(Screen.ScheduleClean.route)
+                },
+                onEditScheduleClick = { scheduleId ->
+                    // Navigate to edit screen with schedule ID
+                    navController.navigate("${Screen.ScheduleClean.route}?scheduleId=$scheduleId")
                 }
             )
         }
