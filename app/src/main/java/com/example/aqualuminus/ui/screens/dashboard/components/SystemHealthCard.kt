@@ -14,6 +14,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.HealthAndSafety
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
@@ -57,7 +59,7 @@ fun SystemHealthCard(systemStatus: SystemStatus) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Warning,
+                    imageVector = Icons.Filled.HealthAndSafety,
                     contentDescription = "System Health",
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
@@ -203,7 +205,7 @@ private fun getStatusIcon(type: StatusType): ImageVector {
     return when (type) {
         StatusType.NORMAL -> Icons.Default.CheckCircle
         StatusType.WARNING -> Icons.Default.Warning
-        StatusType.ERROR -> Icons.Default.Warning
+        StatusType.ERROR -> Icons.Filled.Error
     }
 }
 

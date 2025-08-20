@@ -191,7 +191,7 @@ fun ScheduleCleanScreen(
                         daysOfWeek.forEachIndexed { index, day ->
                             Box(
                                 modifier = Modifier
-                                    .size(48.dp)
+                                    .size(40.dp)
                                     .clip(CircleShape)
                                     .background(
                                         if (selectedDays.contains(index))
@@ -218,7 +218,7 @@ fun ScheduleCleanScreen(
                             ) {
                                 Text(
                                     text = day,
-                                    style = MaterialTheme.typography.bodyMedium,
+                                    style = MaterialTheme.typography.bodySmall,
                                     fontWeight = FontWeight.Medium,
                                     color = if (selectedDays.contains(index))
                                         MaterialTheme.colorScheme.onPrimary

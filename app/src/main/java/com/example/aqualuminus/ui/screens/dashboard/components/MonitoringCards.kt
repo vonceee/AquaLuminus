@@ -9,7 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Thermostat
+import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -47,7 +48,7 @@ fun TemperatureCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Warning,
+                    imageVector = Icons.Filled.Thermostat,
                     contentDescription = "Temperature",
                     tint = Color(0xFFEF4444),
                     modifier = Modifier.size(18.dp)
@@ -106,7 +107,7 @@ fun WaterClarityCard(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Icon(
-                    imageVector = Icons.Default.Warning,
+                    imageVector = Icons.Filled.WaterDrop,
                     contentDescription = "Water Clarity",
                     tint = Color(0xFF3B82F6),
                     modifier = Modifier.size(18.dp)

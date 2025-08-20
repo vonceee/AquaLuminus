@@ -19,7 +19,9 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.compose.material.icons.filled.WaterDrop
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -100,7 +102,7 @@ fun LoginScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Warning, // Replace with WaterDrop icon
+                        imageVector = Icons.Filled.WaterDrop,
                         contentDescription = "Aquarium Logo",
                         modifier = Modifier.size(40.dp),
                         tint = Color(0xFF1E40AF)
@@ -195,9 +197,9 @@ fun LoginScreen(
                             ) {
                                 Icon(
                                     imageVector = if (passwordVisible)
-                                        Icons.Default.Warning // replace w/VisibilityOff Icon
+                                        Icons.Filled.VisibilityOff
                                     else
-                                        Icons.Default.Warning, // replace w/VisibilityOn Icon
+                                        Icons.Filled.Visibility,
                                     contentDescription = if (passwordVisible)
                                         "Hide password"
                                     else

@@ -11,7 +11,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Water
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -60,7 +61,7 @@ fun QuickActionsCard(
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 QuickActionButton(
-                    icon = Icons.Default.Warning,
+                    icon = Icons.Filled.Water,
                     label = "Water Test",
                     iconColor = Color(0xFF3B82F6),
                     modifier = Modifier.weight(1f),
@@ -68,7 +69,7 @@ fun QuickActionsCard(
                 )
 
                 QuickActionButton(
-                    icon = Icons.Default.Warning,
+                    icon = Icons.Filled.CalendarMonth,
                     label = "Schedule Clean",
                     iconColor = Color(0xFF10B981),
                     modifier = Modifier.weight(1f),
