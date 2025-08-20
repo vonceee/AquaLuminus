@@ -19,7 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,7 +50,13 @@ fun ProfileScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Profile", style = MaterialTheme.typography.titleLarge) },
+                title = {
+                    Text(
+                        text = "Profile",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
                         Icon(
@@ -57,7 +64,11 @@ fun ProfileScreen(
                             contentDescription = "Back"
                         )
                     }
-                }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                )
             )
         }
     ) { paddingValues ->
@@ -71,11 +82,17 @@ fun ProfileScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            // Profile Picture with Card & Shadow
+            // Profile Picture with Card & Shadow - matching ScheduleClean style
             Card(
                 shape = CircleShape,
-                elevation = CardDefaults.cardElevation(6.dp),
-                colors = CardDefaults.cardColors(MaterialTheme.colorScheme.surfaceVariant),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                ),
+                elevation = CardDefaults.cardElevation(0.dp),
                 modifier = Modifier.size(130.dp)
             ) {
                 if (user?.photoUrl != null) {
@@ -106,7 +123,8 @@ fun ProfileScreen(
             Text(
                 text = user?.displayName ?: "No Name",
                 style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = user?.email ?: "",
@@ -114,22 +132,30 @@ fun ProfileScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            // Info Section
+            // Info Section - matching ScheduleClean card style
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
-                shape = RoundedCornerShape(16.dp)
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                ),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                ),
+                elevation = CardDefaults.cardElevation(0.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
+                        .padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Text(
                         text = "Account Information",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     ProfileInfoRowWithIcon(
@@ -143,7 +169,7 @@ fun ProfileScreen(
                         value = user?.email ?: "Not available"
                     )
                     ProfileInfoRowWithIcon(
-                        icon = Icons.Default.Warning, // Verified,
+                        icon = Icons.Filled.VerifiedUser,
                         label = "Email Verified",
                         value = if (user?.isEmailVerified == true) "Yes" else "No"
                     )
@@ -166,7 +192,8 @@ private fun ProfileInfoRowWithIcon(
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = MaterialTheme.colorScheme.primary
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(20.dp)
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column(
@@ -180,7 +207,8 @@ private fun ProfileInfoRowWithIcon(
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Medium
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }
