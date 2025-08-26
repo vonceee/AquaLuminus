@@ -8,7 +8,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.POST
-
+// Data classes for API responses
 data class UVLightResponse(
     val success: Boolean = true,
     val uvLightOn: Boolean,
@@ -18,6 +18,7 @@ data class UVLightResponse(
     val device: String? = null
 )
 
+// Retrofit service interface
 interface UVLightService {
     @GET("api/status")
     suspend fun getStatus(): Response<UVLightResponse>
@@ -44,8 +45,16 @@ class UVLightRepository {
 
     private val uvLightService = retrofit.create(UVLightService::class.java)
 
+    // Connection status flow
     private val _isConnected = MutableStateFlow(false)
     val isConnected: Flow<Boolean> = _isConnected.asStateFlow()
+
+    // UV Light timing
+    private val _uvLightStartTime = MutableStateFlow<Long?>(null)
+    val uvLightStartTime: Flow<Long?> = _uvLightStartTime.asStateFlow()
+
+    private val _uvLightDuration = MutableStateFlow(0L)
+    val uvLightDuration: Flow<Long> = _uvLightDuration.asStateFlow()
 
     /**
      * Get the current UV light status
@@ -56,7 +65,9 @@ class UVLightRepository {
             val response = uvLightService.getStatus()
             if (response.isSuccessful && response.body() != null) {
                 _isConnected.value = true
-                Result.success(response.body()!!.uvLightOn)
+                val isOn = response.body()!!.uvLightOn
+                updateUVLightTiming(isOn)
+                Result.success(isOn)
             } else {
                 _isConnected.value = false
                 Result.failure(Exception("Failed to get status: HTTP ${response.code()}"))
@@ -101,7 +112,9 @@ class UVLightRepository {
             val response = command()
             if (response.isSuccessful && response.body() != null) {
                 _isConnected.value = true
-                Result.success(response.body()!!.uvLightOn)
+                val isOn = response.body()!!.uvLightOn
+                updateUVLightTiming(isOn)
+                Result.success(isOn)
             } else {
                 _isConnected.value = false
                 Result.failure(Exception("Command failed: HTTP ${response.code()}"))
@@ -109,6 +122,28 @@ class UVLightRepository {
         } catch (e: Exception) {
             _isConnected.value = false
             Result.failure(e)
+        }
+    }
+
+    /**
+     * Update UV light timing based on current state
+     */
+    private fun updateUVLightTiming(isOn: Boolean) {
+        val currentTime = System.currentTimeMillis()
+
+        if (isOn) {
+            // If light is on and we don't have a start time, set it
+            if (_uvLightStartTime.value == null) {
+                _uvLightStartTime.value = currentTime
+            }
+            // Update duration if we have a start time
+            _uvLightStartTime.value?.let { startTime ->
+                _uvLightDuration.value = currentTime - startTime
+            }
+        } else {
+            // If light is off, reset timing
+            _uvLightStartTime.value = null
+            _uvLightDuration.value = 0L
         }
     }
 
@@ -127,5 +162,20 @@ class UVLightRepository {
      */
     fun getCurrentConnectionStatus(): Boolean {
         return _isConnected.value
+    }
+
+    /**
+     * Get current UV light duration in milliseconds
+     */
+    fun getCurrentDuration(): Long {
+        return _uvLightDuration.value
+    }
+
+    /**
+     * Reset the timer (useful when manually turning off)
+     */
+    fun resetTimer() {
+        _uvLightStartTime.value = null
+        _uvLightDuration.value = 0L
     }
 }

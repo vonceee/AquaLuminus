@@ -39,6 +39,7 @@ fun AquariumDashboard(
 
     // UV-Light state from ViewModel
     val uvLightOn = dashboardViewModel.uvLightOn
+    val uvLightDuration = dashboardViewModel.uvLightDuration
     val isLoading = dashboardViewModel.isLoading
     val isConnected = dashboardViewModel.isConnected
     val error = dashboardViewModel.error
@@ -72,6 +73,7 @@ fun AquariumDashboard(
             isLoading = isLoading,
             isConnected = isConnected,
             error = error,
+            uvLightDuration = uvLightDuration,
             onUvLightToggle = { dashboardViewModel.toggleUVLight() },
             onRefresh = { dashboardViewModel.refreshUVStatus() },
             onClearError = { dashboardViewModel.clearError() }

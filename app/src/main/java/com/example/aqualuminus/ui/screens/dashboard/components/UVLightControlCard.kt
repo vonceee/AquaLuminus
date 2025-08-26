@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccessTime
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Warning
@@ -28,9 +29,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.aqualuminus.utils.formatDurationCompact
 
 @Composable
 fun UVLightControlCard(
@@ -38,6 +41,7 @@ fun UVLightControlCard(
     isLoading: Boolean,
     isConnected: Boolean,
     error: String?,
+    uvLightDuration: Long = 0L, // Add duration parameter
     onUvLightToggle: (Boolean) -> Unit,
     onRefresh: () -> Unit,
     onClearError: () -> Unit
@@ -214,7 +218,7 @@ fun UVLightControlCard(
                 )
             }
 
-            // UV Active Status
+            // UV Active Status with Timer
             if (uvLightOn && isConnected) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Card(
@@ -229,16 +233,42 @@ fun UVLightControlCard(
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(
-                        text = "UV Sterilization Active",
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(16.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color(0xFF3B82F6),
-                        fontWeight = FontWeight.SemiBold,
-                        textAlign = TextAlign.Center
-                    )
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "UV Sterilization Active",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Color(0xFF3B82F6),
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center
+                        )
+
+                        if (uvLightDuration > 0) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.AccessTime,
+                                    contentDescription = "Timer",
+                                    tint = Color(0xFF3B82F6),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = formatDurationCompact(uvLightDuration),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = Color(0xFF3B82F6),
+                                    fontWeight = FontWeight.Bold,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }

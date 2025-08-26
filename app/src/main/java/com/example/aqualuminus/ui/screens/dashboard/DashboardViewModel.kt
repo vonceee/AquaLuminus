@@ -39,10 +39,15 @@ class DashboardViewModel(
     var isConnected by mutableStateOf(false)
         private set
 
+    var uvLightDuration by mutableStateOf(0L)
+        private set
+
     init {
         loadUserData()
         observeConnectionStatus()
+        observeUVLightDuration()
         startUVLightMonitoring()
+        startDurationUpdater()
         refreshUVStatus()
     }
 
@@ -72,6 +77,26 @@ class DashboardViewModel(
         viewModelScope.launch {
             uvLightRepository.isConnected.collectLatest { connected ->
                 isConnected = connected
+            }
+        }
+    }
+
+    private fun observeUVLightDuration() {
+        viewModelScope.launch {
+            uvLightRepository.uvLightDuration.collectLatest { duration ->
+                uvLightDuration = duration
+            }
+        }
+    }
+
+    private fun startDurationUpdater() {
+        viewModelScope.launch {
+            while (true) {
+                if (uvLightOn && isConnected) {
+                    // Update duration from repository every second when UV light is on
+                    uvLightDuration = uvLightRepository.getCurrentDuration()
+                }
+                delay(1000) // Update every second
             }
         }
     }
