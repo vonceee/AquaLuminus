@@ -1,5 +1,6 @@
 package com.example.aqualuminus.ui.screens.schedule.components.schedule_list
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -35,11 +36,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.aqualuminus.ui.screens.schedule.model.SavedSchedule
-import com.example.aqualuminus.ui.screens.schedule.utils.ScheduleFormatter
 
 @Composable
 fun ScheduleCard(
@@ -56,7 +55,7 @@ fun ScheduleCard(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surface
         ),
-        border = androidx.compose.foundation.BorderStroke(
+        border = BorderStroke(
             1.dp,
             MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
         ),
@@ -67,42 +66,28 @@ fun ScheduleCard(
             modifier = Modifier.padding(20.dp)
         ) {
             ScheduleCardHeader(
-                scheduleName = schedule.name,
-                formattedDays = ScheduleFormatter.formatDays(schedule.days),
-                isActive = schedule.isActive,
+                schedule = schedule,
                 onToggle = onToggle,
-                onMenuClick = { dropdownExpanded = true }
-            )
-
-            ScheduleCardDropdownMenu(
-                expanded = dropdownExpanded,
-                onDismiss = { dropdownExpanded = false },
-                onEdit = {
-                    onEdit()
-                    dropdownExpanded = false
-                },
-                onDelete = {
-                    onDelete()
-                    dropdownExpanded = false
-                }
+                dropdownExpanded = dropdownExpanded,
+                onDropdownToggle = { dropdownExpanded = it },
+                onEdit = onEdit,
+                onDelete = onDelete
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            ScheduleTimeDisplay(
-                time = ScheduleFormatter.formatTime(schedule.time)
-            )
+            ScheduleCardTime(time = schedule.time)
 
             Spacer(modifier = Modifier.height(12.dp))
 
             if (schedule.days.size in 2..6) {
-                DayPills(
+                ScheduleCardDayPills(
                     selectedDays = schedule.days,
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
             }
 
-            ScheduleStatus(
+            ScheduleCardStatus(
                 isActive = schedule.isActive,
                 nextRun = schedule.nextRun
             )
@@ -112,27 +97,27 @@ fun ScheduleCard(
 
 @Composable
 private fun ScheduleCardHeader(
-    scheduleName: String,
-    formattedDays: String,
-    isActive: Boolean,
+    schedule: SavedSchedule,
     onToggle: () -> Unit,
-    onMenuClick: () -> Unit,
-    modifier: Modifier = Modifier
+    dropdownExpanded: Boolean,
+    onDropdownToggle: (Boolean) -> Unit,
+    onEdit: () -> Unit,
+    onDelete: () -> Unit
 ) {
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.Top
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = scheduleName.ifBlank { "Untitled Schedule" },
+                text = schedule.name.ifBlank { "Untitled Schedule" },
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Text(
-                text = formattedDays,
+                text = formatDays(schedule.days),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp)
@@ -144,7 +129,7 @@ private fun ScheduleCardHeader(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Switch(
-                checked = isActive,
+                checked = schedule.isActive,
                 onCheckedChange = { onToggle() },
                 colors = SwitchDefaults.colors(
                     checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
@@ -154,13 +139,12 @@ private fun ScheduleCardHeader(
                 )
             )
 
-            IconButton(onClick = onMenuClick) {
-                Icon(
-                    imageVector = Icons.Default.MoreVert,
-                    contentDescription = "More options",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            ScheduleCardDropdownMenu(
+                expanded = dropdownExpanded,
+                onExpandedChange = onDropdownToggle,
+                onEdit = onEdit,
+                onDelete = onDelete
+            )
         }
     }
 }
@@ -168,60 +152,69 @@ private fun ScheduleCardHeader(
 @Composable
 private fun ScheduleCardDropdownMenu(
     expanded: Boolean,
-    onDismiss: () -> Unit,
+    onExpandedChange: (Boolean) -> Unit,
     onEdit: () -> Unit,
     onDelete: () -> Unit
 ) {
-    DropdownMenu(
-        expanded = expanded,
-        onDismissRequest = onDismiss
-    ) {
-        DropdownMenuItem(
-            text = { Text("Edit") },
-            onClick = onEdit,
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Edit,
-                    contentDescription = null
-                )
-            }
-        )
-        DropdownMenuItem(
-            text = {
-                Text(
-                    text = "Delete",
-                    color = MaterialTheme.colorScheme.error
-                )
-            },
-            onClick = onDelete,
-            leadingIcon = {
-                Icon(
-                    imageVector = Icons.Default.Delete,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.error
-                )
-            }
-        )
+    Box {
+        IconButton(
+            onClick = { onExpandedChange(true) }
+        ) {
+            Icon(
+                imageVector = Icons.Default.MoreVert,
+                contentDescription = "More options",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { onExpandedChange(false) }
+        ) {
+            DropdownMenuItem(
+                text = { Text("Edit") },
+                onClick = {
+                    onEdit()
+                    onExpandedChange(false)
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Edit,
+                        contentDescription = null
+                    )
+                }
+            )
+            DropdownMenuItem(
+                text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                onClick = {
+                    onDelete()
+                    onExpandedChange(false)
+                },
+                leadingIcon = {
+                    Icon(
+                        imageVector = Icons.Default.Delete,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            )
+        }
     }
 }
 
 @Composable
-private fun ScheduleTimeDisplay(
-    time: String,
-    modifier: Modifier = Modifier
-) {
+private fun ScheduleCardTime(time: String) {
     Text(
-        text = time,
+        text = formatTime(time),
         style = MaterialTheme.typography.headlineMedium,
         fontWeight = FontWeight.Light,
         color = MaterialTheme.colorScheme.onSurface,
-        fontSize = 32.sp,
-        modifier = modifier
+        fontSize = 32.sp
     )
 }
 
 @Composable
-private fun DayPills(
+private fun ScheduleCardDayPills(
     selectedDays: List<String>,
     modifier: Modifier = Modifier
 ) {
@@ -261,13 +254,12 @@ private fun DayPills(
 }
 
 @Composable
-private fun ScheduleStatus(
+private fun ScheduleCardStatus(
     isActive: Boolean,
-    nextRun: String?,
-    modifier: Modifier = Modifier
+    nextRun: String?
 ) {
     Row(
-        modifier = modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -294,22 +286,30 @@ private fun ScheduleStatus(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun PreviewScheduleCard() {
-    MaterialTheme {
-        ScheduleCard(
-            schedule = SavedSchedule(
-                id = "1",
-                name = "Daily Morning Clean",
-                days = listOf("Mon", "Tue", "Wed", "Thu", "Fri"),
-                time = "08:00",
-                isActive = true,
-                nextRun = "Tomorrow at 8:00 AM"
-            ),
-            onToggle = {},
-            onEdit = {},
-            onDelete = {}
-        )
+// Utility functions
+private fun formatTime(time: String): String {
+    val parts = time.split(":")
+    if (parts.size != 2) return time
+
+    val hour = parts[0].toIntOrNull() ?: return time
+    val minute = parts[1].toIntOrNull() ?: return time
+
+    val ampm = if (hour >= 12) "PM" else "AM"
+    val displayHour = when {
+        hour == 0 -> 12
+        hour > 12 -> hour - 12
+        else -> hour
+    }
+
+    return String.format("%d:%02d %s", displayHour, minute, ampm)
+}
+
+private fun formatDays(days: List<String>): String {
+    return when {
+        days.size == 7 -> "Every day"
+        days.size == 5 && !days.contains("Sat") && !days.contains("Sun") -> "Weekdays"
+        days.size == 2 && days.contains("Sat") && days.contains("Sun") -> "Weekends"
+        days.size == 1 -> days.first()
+        else -> days.joinToString(", ")
     }
 }
