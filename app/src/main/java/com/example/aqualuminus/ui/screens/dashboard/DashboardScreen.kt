@@ -10,14 +10,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.aqualuminus.data.repository.UVLightRepository
 import com.example.aqualuminus.ui.screens.dashboard.components.HeaderSection
 import com.example.aqualuminus.ui.screens.dashboard.components.QuickActionsCard
 import com.example.aqualuminus.ui.screens.dashboard.components.SystemHealthCard
@@ -33,12 +31,19 @@ fun AquariumDashboard(
     onLogout: () -> Unit = {},
     onScheduleCleanClick: () -> Unit = {},
     onWaterTestClick: () -> Unit = {},
-    dashboardViewModel: DashboardViewModel = viewModel()
+    dashboardViewModel: DashboardViewModel = createDashboardViewModel()
 ) {
+    // User data from ViewModel
     val userName = dashboardViewModel.userName
     val userPhotoUrl = dashboardViewModel.userPhotoUrl
 
-    var uvLightOn by remember { mutableStateOf(false) }
+    // UV-Light state from ViewModel
+    val uvLightOn = dashboardViewModel.uvLightOn
+    val isLoading = dashboardViewModel.isLoading
+    val isConnected = dashboardViewModel.isConnected
+    val error = dashboardViewModel.error
+
+    // Other aquarium data (you can move these to ViewModel later if needed)
     val temperature = 24.5f
     val waterClarity = 92
     val systemStatus = SystemStatus(
@@ -64,7 +69,12 @@ fun AquariumDashboard(
         // UV Light Control
         UVLightControlCard(
             uvLightOn = uvLightOn,
-            onUvLightToggle = { uvLightOn = it }
+            isLoading = isLoading,
+            isConnected = isConnected,
+            error = error,
+            onUvLightToggle = { dashboardViewModel.toggleUVLight() },
+            onRefresh = { dashboardViewModel.refreshUVStatus() },
+            onClearError = { dashboardViewModel.clearError() }
         )
 
         // Environmental Monitoring
@@ -91,6 +101,15 @@ fun AquariumDashboard(
             onWaterTestClick = onWaterTestClick
         )
     }
+}
+
+// Helper function to create ViewModel with repository
+@Composable
+private fun createDashboardViewModel(): DashboardViewModel {
+    val repository = remember { UVLightRepository() }
+    return viewModel(
+        factory = DashboardViewModelFactory(repository)
+    )
 }
 
 @Preview(showBackground = true)

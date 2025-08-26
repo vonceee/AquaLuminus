@@ -11,14 +11,19 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,7 +35,12 @@ import androidx.compose.ui.unit.dp
 @Composable
 fun UVLightControlCard(
     uvLightOn: Boolean,
-    onUvLightToggle: (Boolean) -> Unit
+    isLoading: Boolean,
+    isConnected: Boolean,
+    error: String?,
+    onUvLightToggle: (Boolean) -> Unit,
+    onRefresh: () -> Unit,
+    onClearError: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -39,7 +49,10 @@ fun UVLightControlCard(
         ),
         border = androidx.compose.foundation.BorderStroke(
             1.dp,
-            MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+            if (isConnected)
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+            else
+                Color.Red.copy(alpha = 0.3f)
         ),
         elevation = CardDefaults.cardElevation(0.dp),
         shape = RoundedCornerShape(16.dp)
@@ -47,7 +60,6 @@ fun UVLightControlCard(
         Column(
             modifier = Modifier.padding(20.dp)
         ) {
-            // Card Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -60,7 +72,7 @@ fun UVLightControlCard(
                     Icon(
                         imageVector = Icons.Filled.Lightbulb,
                         contentDescription = "UV Light",
-                        tint = if (uvLightOn) Color(0xFF3B82F6) else MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = if (uvLightOn && isConnected) Color(0xFF3B82F6) else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
@@ -69,35 +81,116 @@ fun UVLightControlCard(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
-                }
-                AssistChip(
-                    onClick = { },
-                    label = {
-                        Text(
-                            text = if (uvLightOn) "ON" else "OFF",
-                            style = MaterialTheme.typography.labelMedium,
-                            fontWeight = FontWeight.SemiBold
+
+                    // Connection indicator
+                    if (!isConnected) {
+                        Icon(
+                            imageVector = Icons.Filled.Warning,
+                            contentDescription = "Disconnected",
+                            tint = Color.Red,
+                            modifier = Modifier.size(16.dp)
                         )
-                    },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = if (uvLightOn)
-                            MaterialTheme.colorScheme.primary
-                        else
-                            MaterialTheme.colorScheme.surface,
-                        labelColor = if (uvLightOn)
-                            MaterialTheme.colorScheme.onPrimary
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                }
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Status chip
+                    AssistChip(
+                        onClick = { },
+                        label = {
+                            Text(
+                                text = if (isConnected) {
+                                    if (uvLightOn) "ON" else "OFF"
+                                } else {
+                                    "OFFLINE"
+                                },
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        },
+                        colors = AssistChipDefaults.assistChipColors(
+                            containerColor = if (isConnected && uvLightOn)
+                                MaterialTheme.colorScheme.primary
+                            else if (!isConnected)
+                                Color.Red.copy(alpha = 0.1f)
+                            else
+                                MaterialTheme.colorScheme.surface,
+                            labelColor = if (isConnected && uvLightOn)
+                                MaterialTheme.colorScheme.onPrimary
+                            else if (!isConnected)
+                                Color.Red
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp,
+                            if (isConnected && uvLightOn)
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
+                            else if (!isConnected)
+                                Color.Red.copy(alpha = 0.3f)
+                            else
+                                MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+
+                    IconButton(
+                        onClick = onRefresh,
+                        enabled = !isLoading
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                imageVector = Icons.Filled.Refresh,
+                                contentDescription = "Refresh",
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (error != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.Red.copy(alpha = 0.1f)
                     ),
                     border = androidx.compose.foundation.BorderStroke(
                         1.dp,
-                        if (uvLightOn)
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-                        else
-                            MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                        Color.Red.copy(alpha = 0.2f)
                     ),
-                    shape = RoundedCornerShape(12.dp)
-                )
+                    elevation = CardDefaults.cardElevation(0.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = error,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Red,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextButton(
+                            onClick = onClearError
+                        ) {
+                            Text("Dismiss")
+                        }
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -116,12 +209,13 @@ fun UVLightControlCard(
                 )
                 Switch(
                     checked = uvLightOn,
-                    onCheckedChange = onUvLightToggle
+                    onCheckedChange = onUvLightToggle,
+                    enabled = isConnected && !isLoading
                 )
             }
 
             // UV Active Status
-            if (uvLightOn) {
+            if (uvLightOn && isConnected) {
                 Spacer(modifier = Modifier.height(16.dp))
                 Card(
                     colors = CardDefaults.cardColors(
@@ -137,7 +231,9 @@ fun UVLightControlCard(
                 ) {
                     Text(
                         text = "UV Sterilization Active",
-                        modifier = Modifier.padding(16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
                         style = MaterialTheme.typography.bodyMedium,
                         color = Color(0xFF3B82F6),
                         fontWeight = FontWeight.SemiBold,

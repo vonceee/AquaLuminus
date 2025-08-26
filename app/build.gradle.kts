@@ -57,6 +57,8 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.navigation.compose)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
     implementation(platform(libs.androidx.compose.bom))
     implementation(platform(libs.firebase.bom))
     testImplementation(libs.junit)
