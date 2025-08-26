@@ -17,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -76,7 +77,10 @@ fun ScheduleCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            ScheduleCardTime(time = schedule.time)
+            ScheduleCardTimeAndDuration(
+                time = schedule.time,
+                durationMinutes = schedule.durationMinutes
+            )
 
             Spacer(modifier = Modifier.height(12.dp))
 
@@ -203,14 +207,43 @@ private fun ScheduleCardDropdownMenu(
 }
 
 @Composable
-private fun ScheduleCardTime(time: String) {
-    Text(
-        text = formatTime(time),
-        style = MaterialTheme.typography.headlineMedium,
-        fontWeight = FontWeight.Light,
-        color = MaterialTheme.colorScheme.onSurface,
-        fontSize = 32.sp
-    )
+private fun ScheduleCardTimeAndDuration(
+    time: String,
+    durationMinutes: Int
+) {
+    Row(
+        verticalAlignment = Alignment.Bottom,
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Time display
+        Text(
+            text = formatTime(time),
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.Light,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontSize = 32.sp
+        )
+
+        // Duration display
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.padding(bottom = 4.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.Schedule,
+                contentDescription = "Duration",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(16.dp)
+            )
+            Text(
+                text = formatDuration(durationMinutes),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
 }
 
 @Composable
@@ -302,6 +335,18 @@ private fun formatTime(time: String): String {
     }
 
     return String.format("%d:%02d %s", displayHour, minute, ampm)
+}
+
+private fun formatDuration(minutes: Int): String {
+    return when {
+        minutes < 60 -> "${minutes}m"
+        minutes % 60 == 0 -> "${minutes / 60}h"
+        else -> {
+            val hours = minutes / 60
+            val remainingMinutes = minutes % 60
+            "${hours}h ${remainingMinutes}m"
+        }
+    }
 }
 
 private fun formatDays(days: List<String>): String {
