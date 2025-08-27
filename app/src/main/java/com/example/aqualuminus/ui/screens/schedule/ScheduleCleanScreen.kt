@@ -31,6 +31,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -45,9 +46,14 @@ import java.util.Calendar
 
 @Composable
 fun ScheduleCleanScreen(
-    onBackClick: () -> Unit = {},
-    viewModel: ScheduleViewModel = viewModel(factory = ScheduleViewModelFactory())
+    onBackClick: () -> Unit = {}
 ) {
+    // Get the context using LocalContext
+    val context = LocalContext.current
+    val viewModel: ScheduleViewModel = viewModel(
+        factory = ScheduleViewModelFactory(context = context)
+    )
+
     val currentTime = Calendar.getInstance()
     var selectedHour by remember { mutableIntStateOf(currentTime.get(Calendar.HOUR)) }
     var selectedMinute by remember { mutableIntStateOf(currentTime.get(Calendar.MINUTE)) }
@@ -89,9 +95,14 @@ fun ScheduleCleanScreen(
     }
 
     val onSaveClick = {
-        val displayHour = if (selectedHour == 0) 12 else selectedHour
-        val amPmText = if (selectedAmPm == 0) "AM" else "PM"
-        val timeString = String.format("%02d:%02d %s", displayHour, selectedMinute, amPmText)
+        // Convert 12-hour format to 24-hour format for storage
+        val hour24 = when {
+            selectedAmPm == 0 && selectedHour == 12 -> 0 // 12 AM = 00
+            selectedAmPm == 1 && selectedHour != 12 -> selectedHour + 12 // PM (not 12)
+            else -> selectedHour // AM (not 12) or 12 PM
+        }
+
+        val timeString = String.format("%02d:%02d", hour24, selectedMinute)
         val selectedDayNames = selectedDays.sorted().map { daysFullNames[it] }
 
         val schedule = SavedSchedule(
@@ -104,7 +115,7 @@ fun ScheduleCleanScreen(
         )
 
         Log.d("ScheduleClean", "Saving schedule:")
-        Log.d("ScheduleClean", "Time: $timeString")
+        Log.d("ScheduleClean", "Time: $timeString (24-hour format)")
         Log.d("ScheduleClean", "Days: ${selectedDayNames.joinToString(", ")}")
         Log.d("ScheduleClean", "Name: ${schedule.name}")
         Log.d("ScheduleClean", "Duration: $selectedDuration minutes")

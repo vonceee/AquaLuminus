@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -16,10 +15,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.aqualuminus.ui.screens.schedule.components.schedule_list.ScheduleCard
@@ -31,13 +29,15 @@ import com.example.aqualuminus.ui.screens.schedule.model.SavedSchedule
 
 @Composable
 fun SchedulesListScreen(
-    viewModel: ScheduleViewModel = viewModel(
-        factory = ScheduleViewModelFactory()
-    ),
     onBackClick: () -> Unit = {},
     onCreateNewClick: () -> Unit = {},
     onEditScheduleClick: (String) -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val viewModel: ScheduleViewModel = viewModel(
+        factory = ScheduleViewModelFactory(context = context)
+    )
+
     val schedules by viewModel.schedules.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
@@ -87,6 +87,7 @@ fun SchedulesListScreen(
     }
 }
 
+// Rest of the file remains the same...
 @Composable
 private fun ScheduleListContent(
     schedules: List<SavedSchedule>,
@@ -150,87 +151,3 @@ data class ScheduleActions(
     val onDelete: (String) -> Unit,
     val onEdit: (String) -> Unit
 )
-
-// Sample data function
-private fun getSampleSchedules(): List<SavedSchedule> = listOf(
-    SavedSchedule(
-        id = "1",
-        name = "Daily Morning Clean",
-        days = listOf("Mon", "Tue", "Wed", "Thu", "Fri"),
-        time = "08:00",
-        isActive = true,
-        nextRun = "Tomorrow at 8:00 AM"
-    ),
-    SavedSchedule(
-        id = "2",
-        name = "Weekend Deep Clean",
-        days = listOf("Sat", "Sun"),
-        time = "10:30",
-        isActive = true,
-        nextRun = "Saturday at 10:30 AM"
-    ),
-    SavedSchedule(
-        id = "3",
-        name = "Midweek Maintenance",
-        days = listOf("Wed"),
-        time = "15:45",
-        isActive = false,
-        nextRun = "Paused"
-    ),
-    SavedSchedule(
-        id = "4",
-        name = "Evening Clean",
-        days = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"),
-        time = "18:00",
-        isActive = true,
-        nextRun = "Today at 6:00 PM"
-    )
-)
-
-// Preview with sample data for development
-@Composable
-fun PreviewSchedulesListScreen() {
-    MaterialTheme {
-        SchedulesListScreenPreview()
-    }
-}
-
-@Composable
-private fun SchedulesListScreenPreview() {
-    var schedules by remember { mutableStateOf(getSampleSchedules()) }
-
-    val scheduleActions = ScheduleActions(
-        onToggle = { scheduleId ->
-            schedules = schedules.map { schedule ->
-                if (schedule.id == scheduleId) {
-                    schedule.copy(isActive = !schedule.isActive)
-                } else schedule
-            }
-        },
-        onDelete = { scheduleId ->
-            schedules = schedules.filter { it.id != scheduleId }
-        },
-        onEdit = { }
-    )
-
-    Scaffold(
-        topBar = {
-            ScheduleTopBar(
-                onBackClick = { },
-                onCreateNewClick = { }
-            )
-        },
-        floatingActionButton = {
-            ScheduleFloatingActionButton(onClick = { })
-        }
-    ) { padding ->
-        ScheduleListContent(
-            schedules = schedules,
-            actions = scheduleActions,
-            isLoading = false,
-            onCreateNewClick = { },
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = padding
-        )
-    }
-}

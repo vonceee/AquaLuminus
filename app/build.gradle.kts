@@ -59,6 +59,7 @@ dependencies {
     implementation(libs.navigation.compose)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.gson)
+    implementation(libs.work.runtime.ktx)
     implementation(platform(libs.androidx.compose.bom))
     implementation(platform(libs.firebase.bom))
     testImplementation(libs.junit)
