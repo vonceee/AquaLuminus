@@ -1,6 +1,7 @@
 package com.example.aqualuminus.ui.screens.schedule
 
 import android.content.Context
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -27,6 +28,12 @@ class ScheduleViewModel(
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+
+    private val _currentSchedule = MutableStateFlow<SavedSchedule?>(null)
+    val currentSchedule: StateFlow<SavedSchedule?> = _currentSchedule.asStateFlow()
+
+    private val _isLoadingSchedule = MutableStateFlow(false)
+    val isLoadingSchedule: StateFlow<Boolean> = _isLoadingSchedule.asStateFlow()
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
@@ -141,9 +148,52 @@ class ScheduleViewModel(
         }
     }
 
+    fun loadSchedule(scheduleId: String) {
+        viewModelScope.launch {
+            try {
+                _isLoadingSchedule.value = true
+                _error.value = null
+
+                val schedule = repository.getScheduleById(scheduleId)
+                _currentSchedule.value = schedule
+
+                if (schedule == null) {
+                    _error.value = "Schedule not found"
+                }
+            } catch (e: Exception) {
+                Log.e("ScheduleViewModel", "Error loading schedule", e)
+                _error.value = e.message ?: "Unknown error occurred"
+                _currentSchedule.value = null
+            } finally {
+                _isLoadingSchedule.value = false
+            }
+        }
+    }
+
+    fun updateSchedule(schedule: SavedSchedule) {
+        viewModelScope.launch {
+            try {
+                _isLoading.value = true
+                _error.value = null
+
+                repository.updateSchedule(schedule)
+                _saveResult.value = SaveResult.Success
+
+                // Refresh the schedules list
+                loadSchedules()
+
+            } catch (e: Exception) {
+                Log.e("ScheduleViewModel", "Error Updating Schedule", e)
+                _saveResult.value = SaveResult.Error(e.message ?: "Failed to Update Schedule")
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
     fun deleteSchedule(scheduleId: String) {
         viewModelScope.launch {
-            // Cancel the scheduled task first
+            // cancel the scheduled task first
             ScheduleService.cancelSchedule(context, scheduleId)
 
             repository.deleteSchedule(scheduleId)
@@ -151,6 +201,10 @@ class ScheduleViewModel(
                     _error.value = exception.message ?: "Failed to delete schedule"
                 }
         }
+    }
+
+    fun clearCurrentSchedule() {
+        _currentSchedule.value = null
     }
 
     fun updateScheduleStatus(scheduleId: String, isActive: Boolean) {

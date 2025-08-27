@@ -1,11 +1,14 @@
 package com.example.aqualuminus.ui.navigation
 
+import android.R.attr.type
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.example.aqualuminus.data.auth.AuthState
 import com.example.aqualuminus.ui.screens.dashboard.AquariumDashboard
 import com.example.aqualuminus.ui.screens.login.LoginScreen
@@ -46,7 +49,7 @@ fun AquariumNavGraph(
                 if (navController.currentDestination?.route == Screen.Dashboard.route ||
                     navController.currentDestination?.route == Screen.Profile.route ||
                     navController.currentDestination?.route == Screen.SchedulesList.route ||
-                    navController.currentDestination?.route == Screen.ScheduleClean.route ||
+                    navController.currentDestination?.route?.startsWith(Screen.ScheduleClean.route) == true ||
                     navController.currentDestination?.route == Screen.WaterTest.route) {
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Dashboard.route) { inclusive = true }
@@ -135,8 +138,19 @@ fun AquariumNavGraph(
             )
         }
 
-        composable(Screen.ScheduleClean.route) {
+        composable(
+            route = "${Screen.ScheduleClean.route}?scheduleId={scheduleId}",
+            arguments = listOf(
+                navArgument("scheduleId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val scheduleId = backStackEntry.arguments?.getString("scheduleId")
             ScheduleCleanScreen(
+                scheduleId = scheduleId,
                 onBackClick = {
                     navController.popBackStack()
                 }
