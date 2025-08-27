@@ -34,7 +34,7 @@ fun ScheduleEmptyState(
             verticalArrangement = Arrangement.Center
         ) {
             Text(
-                text = "No schedules yet",
+                text = "No Schedules Set",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 16.dp)

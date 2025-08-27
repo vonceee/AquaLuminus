@@ -45,7 +45,7 @@ fun DurationPicker(
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Minutes picker
+                // Minutes Picker
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
@@ -64,10 +64,10 @@ fun DurationPicker(
                 }
             }
 
-            // Duration preview
+            // Duration Preview
             Text(
                 text = buildString {
-                    append("Cleaning duration: ")
+                    append("Cleaning Duration: ")
                     when {
                         selectedMinutes < 60 -> append("$selectedMinutes minutes")
                         selectedMinutes == 60 -> append("1 hour")
