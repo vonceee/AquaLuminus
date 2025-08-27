@@ -39,6 +39,29 @@ class ScheduleRepository(
         }
     }
 
+    suspend fun getScheduleById(scheduleId: String): SavedSchedule? {
+        return try {
+            val document = schedulesCollection.document(scheduleId).get().await()
+            val schedule = document.toObject(SavedSchedule::class.java)
+            Log.d("ScheduleRepository", "Loaded schedule by ID: $scheduleId -> ${schedule != null}")
+            schedule
+        } catch (e: Exception) {
+            Log.e("ScheduleRepository", "Error loading schedule by ID: $scheduleId", e)
+            null
+        }
+    }
+
+    suspend fun updateSchedule(schedule: SavedSchedule): Result<Unit> {
+        return try {
+            schedulesCollection.document(schedule.id).set(schedule).await()
+            Log.d("ScheduleRepository", "Schedule Updated Successfully: ${schedule.id}")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e("ScheduleRepository", "Error Updating Schedule", e)
+            Result.failure(e)
+        }
+    }
+
     fun observeSchedules(): Flow<List<SavedSchedule>> = callbackFlow {
         val listener: ListenerRegistration = schedulesCollection
             .addSnapshotListener { snapshot, error ->

@@ -23,6 +23,7 @@ fun ScheduleBottomBar(
     onCancelClick: () -> Unit,
     onSaveClick: () -> Unit,
     isSaveEnabled: Boolean,
+    saveButtonText: String = "Save Schedule",
     modifier: Modifier = Modifier
 ) {
     Surface(
@@ -56,7 +57,7 @@ fun ScheduleBottomBar(
                     MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
                 )
             ) {
-                Text("Save Schedule")
+                Text(saveButtonText)
             }
         }
     }
@@ -70,6 +71,19 @@ fun PreviewScheduleBottomBar() {
             onCancelClick = {},
             onSaveClick = {},
             isSaveEnabled = true
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewEditScheduleBottomBar() {
+    MaterialTheme {
+        ScheduleBottomBar(
+            onCancelClick = {},
+            onSaveClick = {},
+            isSaveEnabled = true,
+            saveButtonText = "Update"
         )
     }
 }

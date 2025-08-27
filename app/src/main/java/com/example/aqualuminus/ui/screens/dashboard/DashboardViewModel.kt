@@ -145,7 +145,8 @@ class DashboardViewModel(
                     uvLightOn = status
                 },
                 onFailure = { exception ->
-                    error = "Failed to refresh status: ${exception.message}"
+                    error = "No Connection"
+                    Log.e("UVLightRepository", "No Connection", exception)
                 }
             )
 

@@ -177,14 +177,28 @@ class ScheduleViewModel(
                 _error.value = null
 
                 repository.updateSchedule(schedule)
-                _saveResult.value = SaveResult.Success
+                    .onSuccess {
+                        _saveResult.value = SaveResult.Success
+                        _error.value = null
 
-                // Refresh the schedules list
-                loadSchedules()
+                        // Cancel existing scheduled task and reschedule with new settings
+                        ScheduleService.cancelSchedule(context, schedule.id)
+                        if (schedule.isActive) {
+                            ScheduleService.scheduleUVCleaning(context, schedule)
+                        }
+
+                        // Refresh the schedules list
+                        loadSchedules()
+                    }
+                    .onFailure { exception ->
+                        _saveResult.value = SaveResult.Error(exception.message ?: "Failed to update schedule")
+                        _error.value = exception.message
+                    }
 
             } catch (e: Exception) {
-                Log.e("ScheduleViewModel", "Error Updating Schedule", e)
-                _saveResult.value = SaveResult.Error(e.message ?: "Failed to Update Schedule")
+                Log.e("ScheduleViewModel", "Error updating Schedule", e)
+                _saveResult.value = SaveResult.Error(e.message ?: "Failed to update Schedule")
+                _error.value = e.message
             } finally {
                 _isLoading.value = false
             }
