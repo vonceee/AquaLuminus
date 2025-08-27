@@ -87,7 +87,6 @@ fun SchedulesListScreen(
     }
 }
 
-// Rest of the file remains the same...
 @Composable
 private fun ScheduleListContent(
     schedules: List<SavedSchedule>,

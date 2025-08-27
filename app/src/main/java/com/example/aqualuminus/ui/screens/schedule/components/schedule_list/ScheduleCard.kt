@@ -215,7 +215,7 @@ private fun ScheduleCardTimeAndDuration(
         verticalAlignment = Alignment.Bottom,
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Time display
+        // Time Display
         Text(
             text = formatTime(time),
             style = MaterialTheme.typography.headlineMedium,
@@ -224,7 +224,7 @@ private fun ScheduleCardTimeAndDuration(
             fontSize = 32.sp
         )
 
-        // Duration display
+        // Duration Display
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -319,7 +319,7 @@ private fun ScheduleCardStatus(
     }
 }
 
-// Utility functions
+// Utility Functions
 private fun formatTime(time: String): String {
     val parts = time.split(":")
     if (parts.size != 2) return time
