@@ -25,7 +25,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // Disable Automatic Fit Window Scaling
+        // disable Automatic Fit Window Scaling
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
         setContent {
