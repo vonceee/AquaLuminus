@@ -1,5 +1,6 @@
 package com.example.aqualuminus.ui.screens.dashboard
 
+import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -19,14 +20,14 @@ class DashboardViewModel(
 
     private val auth = FirebaseAuth.getInstance()
 
-    // Firebase user state
+    // Firebase User State
     var userName by mutableStateOf("User")
         private set
 
     var userPhotoUrl by mutableStateOf<String?>(null)
         private set
 
-    // UV Light UI state
+    // UV Light UI State
     var uvLightOn by mutableStateOf(false)
         private set
 
@@ -51,16 +52,17 @@ class DashboardViewModel(
         refreshUVStatus()
     }
 
-    // Firebase user methods
+    // Firebase User Methods
     private fun loadUserData() {
         val currentUser = auth.currentUser
         currentUser?.let { user ->
             userName = user.displayName
-                ?: user.email?.substringBefore("@")
-                        ?: "User"
+                ?: user.email
+                ?: "User"
             userPhotoUrl = user.photoUrl?.toString()
         }
     }
+
 
     fun refreshUserData() {
         auth.currentUser?.reload()?.addOnCompleteListener {
@@ -72,7 +74,7 @@ class DashboardViewModel(
         return auth.currentUser
     }
 
-    // UV Light monitoring and control methods
+    // UV-Light monitoring and control methods
     private fun observeConnectionStatus() {
         viewModelScope.launch {
             uvLightRepository.isConnected.collectLatest { connected ->
@@ -93,10 +95,10 @@ class DashboardViewModel(
         viewModelScope.launch {
             while (true) {
                 if (uvLightOn && isConnected) {
-                    // Update duration from repository every second when UV light is on
+                    // update duration from repository every second when UV light is on
                     uvLightDuration = uvLightRepository.getCurrentDuration()
                 }
-                delay(1000) // Update every second
+                delay(1000)
             }
         }
     }
@@ -105,27 +107,28 @@ class DashboardViewModel(
         viewModelScope.launch {
             while (true) {
                 try {
-                    if (!isLoading) { // Don't poll during user actions
+                    if (!isLoading) { // don't poll during user actions
                         val result = uvLightRepository.getUVLightStatus()
                         result.fold(
                             onSuccess = { status ->
                                 uvLightOn = status
-                                // Clear error only if there was a connection issue
+                                // clear error only if there was a connection issue
                                 if (error?.contains("Connection") == true) {
                                     error = null
                                 }
                             },
                             onFailure = { exception ->
-                                // Don't override error if user action is in progress
+                                // don't override error if user action is in progress
                                 if (!isLoading) {
-                                    error = "Connection lost: ${exception.message}"
+                                    error = "Connection Lost"
+                                    Log.e("UVLightRepository", "Connection Lost", exception)
                                 }
                             }
                         )
                     }
-                    delay(5000) // Poll every 5 seconds
+                    delay(5000)
                 } catch (e: Exception) {
-                    delay(10000) // Wait longer on error
+                    delay(10000)
                 }
             }
         }

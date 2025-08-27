@@ -8,7 +8,8 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.POST
-// Data classes for API responses
+
+// data classes for API responses
 data class UVLightResponse(
     val success: Boolean = true,
     val uvLightOn: Boolean,
@@ -18,7 +19,7 @@ data class UVLightResponse(
     val device: String? = null
 )
 
-// Retrofit service interface
+// retrofit service interface
 interface UVLightService {
     @GET("api/status")
     suspend fun getStatus(): Response<UVLightResponse>
@@ -35,8 +36,8 @@ interface UVLightService {
 
 class UVLightRepository {
 
-    // Network configuration - you might want to move this to a config file or inject it
-    private val ESP32_IP = "192.168.254.199" // Change this to your ESP32's IP
+    // Network Configuration - you might want to move this to a config file or inject it
+    private val ESP32_IP = "192.168.254.199" // change this to your ESP32's IP
 
     private val retrofit = Retrofit.Builder()
         .baseUrl("http://$ESP32_IP/")
@@ -45,11 +46,11 @@ class UVLightRepository {
 
     private val uvLightService = retrofit.create(UVLightService::class.java)
 
-    // Connection status flow
+    // connection status flow
     private val _isConnected = MutableStateFlow(false)
     val isConnected: Flow<Boolean> = _isConnected.asStateFlow()
 
-    // UV Light timing
+    // UV-Light Timer
     private val _uvLightStartTime = MutableStateFlow<Long?>(null)
     val uvLightStartTime: Flow<Long?> = _uvLightStartTime.asStateFlow()
 
@@ -57,7 +58,7 @@ class UVLightRepository {
     val uvLightDuration: Flow<Long> = _uvLightDuration.asStateFlow()
 
     /**
-     * Get the current UV light status
+     * get the current UV light status
      * @return Result<Boolean> - true if UV light is on, false if off
      */
     suspend fun getUVLightStatus(): Result<Boolean> {
@@ -79,7 +80,7 @@ class UVLightRepository {
     }
 
     /**
-     * Turn on the UV light
+     * turn on the UV light
      * @return Result<Boolean> - the new state of the UV light
      */
     suspend fun turnOnUVLight(): Result<Boolean> {
@@ -87,7 +88,7 @@ class UVLightRepository {
     }
 
     /**
-     * Turn off the UV light
+     * turn off the UV light
      * @return Result<Boolean> - the new state of the UV light
      */
     suspend fun turnOffUVLight(): Result<Boolean> {
@@ -95,7 +96,7 @@ class UVLightRepository {
     }
 
     /**
-     * Toggle the UV light state
+     * toggle the UV light state
      * @return Result<Boolean> - the new state of the UV light
      */
     suspend fun toggleUVLight(): Result<Boolean> {
@@ -103,7 +104,7 @@ class UVLightRepository {
     }
 
     /**
-     * Private helper method to execute UV light commands
+     * private helper method to execute UV light commands
      */
     private suspend fun executeUVLightCommand(
         command: suspend () -> Response<UVLightResponse>
@@ -126,53 +127,53 @@ class UVLightRepository {
     }
 
     /**
-     * Update UV light timing based on current state
+     * update UV light timing based on current state
      */
     private fun updateUVLightTiming(isOn: Boolean) {
         val currentTime = System.currentTimeMillis()
 
         if (isOn) {
-            // If light is on and we don't have a start time, set it
+            // if light is on and we don't have a start time, set it
             if (_uvLightStartTime.value == null) {
                 _uvLightStartTime.value = currentTime
             }
-            // Update duration if we have a start time
+            // update duration if we have a start time
             _uvLightStartTime.value?.let { startTime ->
                 _uvLightDuration.value = currentTime - startTime
             }
         } else {
-            // If light is off, reset timing
+            // if light is off, reset timing
             _uvLightStartTime.value = null
             _uvLightDuration.value = 0L
         }
     }
 
     /**
-     * Update the ESP32 IP address and recreate the retrofit instance
-     * Note: You might want to make this more sophisticated by using a configuration class
+     * update the ESP32 IP address and recreate the retrofit instance
+     * Note: you might want to make this more sophisticated by using a configuration class
      */
     fun updateESP32IP(newIP: String) {
-        // For now, this would require recreating the retrofit instance
-        // In a production app, you might want to handle this more elegantly
+        // for now, this would require recreating the retrofit instance
+        // in a production app, you might want to handle this more elegantly
         // by making the IP configurable through dependency injection
     }
 
     /**
-     * Get current connection status synchronously
+     * get current connection status synchronously
      */
     fun getCurrentConnectionStatus(): Boolean {
         return _isConnected.value
     }
 
     /**
-     * Get current UV light duration in milliseconds
+     * get current UV light duration in milliseconds
      */
     fun getCurrentDuration(): Long {
         return _uvLightDuration.value
     }
 
     /**
-     * Reset the timer (useful when manually turning off)
+     * reset the timer (useful when manually turning off)
      */
     fun resetTimer() {
         _uvLightStartTime.value = null

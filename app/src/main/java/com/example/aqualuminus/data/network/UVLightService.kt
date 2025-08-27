@@ -1,4 +1,3 @@
-// data/network/UVLightService.kt
 package com.example.aqualuminus.data.network
 
 import retrofit2.Response

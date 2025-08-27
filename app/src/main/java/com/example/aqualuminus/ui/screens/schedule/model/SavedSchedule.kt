@@ -10,6 +10,6 @@ data class SavedSchedule(
     val nextRun: String? = null,
     val createdAt: Long = System.currentTimeMillis()
 ) {
-    // No-argument constructor for Firestore
+    // no-argument constructor for Firestore
     constructor() : this("", "", emptyList(), "", 30, true, null, System.currentTimeMillis())
 }
