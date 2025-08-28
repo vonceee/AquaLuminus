@@ -5,7 +5,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import com.example.aqualuminus.data.network.ScheduleService
+import com.example.aqualuminus.data.factory.ServiceFactory
 import com.example.aqualuminus.data.repository.ScheduleRepository
 import com.example.aqualuminus.ui.screens.schedule.model.SavedSchedule
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +22,10 @@ class ScheduleViewModel(
     private val repository: ScheduleRepository = ScheduleRepository(),
     private val context: Context
 ) : ViewModel() {
+
+    // Get the schedule service from our factory
+    private val scheduleService = ServiceFactory.getScheduleService(context)
+    private val timeCalculator = ServiceFactory.getTimeCalculator()
 
     private val _schedules = MutableStateFlow<List<SavedSchedule>>(emptyList())
     val schedules: StateFlow<List<SavedSchedule>> = _schedules.asStateFlow()
@@ -46,43 +50,6 @@ class ScheduleViewModel(
         observeSchedules()
     }
 
-    /**
-     * Parse time string that can be in either 24-hour (HH:mm) or 12-hour (HH:mm AM/PM) format
-     * Returns Pair<hour24, minute>
-     */
-    private fun parseTime(timeString: String): Pair<Int, Int> {
-        return try {
-            if (timeString.contains("AM") || timeString.contains("PM")) {
-                // 12-hour format: "10:30 AM" or "02:45 PM"
-                val isAM = timeString.contains("AM")
-                val timePart = timeString.replace("AM", "").replace("PM", "").trim()
-                val parts = timePart.split(":")
-
-                var hour = parts[0].toInt()
-                val minute = parts[1].toInt()
-
-                // Convert to 24-hour format
-                hour = when {
-                    isAM && hour == 12 -> 0  // 12:xx AM = 00:xx
-                    !isAM && hour != 12 -> hour + 12  // x:xx PM = (x+12):xx (except 12 PM)
-                    else -> hour  // AM (not 12) or 12 PM stays the same
-                }
-
-                Pair(hour, minute)
-            } else {
-                // 24-hour format: "14:30"
-                val parts = timeString.split(":")
-                val hour = parts[0].toInt()
-                val minute = parts[1].toInt()
-                Pair(hour, minute)
-            }
-        } catch (e: Exception) {
-            // Default to current time if parsing fails
-            val now = Calendar.getInstance()
-            Pair(now.get(Calendar.HOUR_OF_DAY), now.get(Calendar.MINUTE))
-        }
-    }
-
     fun saveSchedule(schedule: SavedSchedule) {
         viewModelScope.launch {
             _isLoading.value = true
@@ -97,9 +64,9 @@ class ScheduleViewModel(
                     _saveResult.value = SaveResult.Success
                     _error.value = null
 
-                    // Schedule the UV cleaning task
+                    // Schedule the UV cleaning task using the new service
                     if (scheduleWithId.isActive) {
-                        ScheduleService.scheduleUVCleaning(context, scheduleWithId)
+                        scheduleService.scheduleUVCleaning(context, scheduleWithId)
                     }
                 }
                 .onFailure { exception ->
@@ -123,8 +90,8 @@ class ScheduleViewModel(
                     }
                     _error.value = null
 
-                    // Reschedule all active schedules
-                    ScheduleService.rescheduleAll(context, scheduleList.filter { it.isActive })
+                    // Reschedule all active schedules using the new service
+                    scheduleService.rescheduleAll(context, scheduleList.filter { it.isActive })
                 }
                 .onFailure { exception ->
                     _error.value = exception.message ?: "Failed to load schedules"
@@ -182,9 +149,9 @@ class ScheduleViewModel(
                         _error.value = null
 
                         // Cancel existing scheduled task and reschedule with new settings
-                        ScheduleService.cancelSchedule(context, schedule.id)
+                        scheduleService.cancelSchedule(context, schedule.id)
                         if (schedule.isActive) {
-                            ScheduleService.scheduleUVCleaning(context, schedule)
+                            scheduleService.scheduleUVCleaning(context, schedule)
                         }
 
                         // Refresh the schedules list
@@ -207,8 +174,8 @@ class ScheduleViewModel(
 
     fun deleteSchedule(scheduleId: String) {
         viewModelScope.launch {
-            // cancel the scheduled task first
-            ScheduleService.cancelSchedule(context, scheduleId)
+            // Cancel the scheduled task first
+            scheduleService.cancelSchedule(context, scheduleId)
 
             repository.deleteSchedule(scheduleId)
                 .onFailure { exception ->
@@ -229,10 +196,10 @@ class ScheduleViewModel(
                     if (schedule != null) {
                         if (isActive) {
                             // Schedule the task
-                            ScheduleService.scheduleUVCleaning(context, schedule.copy(isActive = isActive))
+                            scheduleService.scheduleUVCleaning(context, schedule.copy(isActive = isActive))
                         } else {
                             // Cancel the task
-                            ScheduleService.cancelSchedule(context, scheduleId)
+                            scheduleService.cancelSchedule(context, scheduleId)
                         }
                     }
                 }
@@ -246,54 +213,29 @@ class ScheduleViewModel(
         if (!schedule.isActive) return "Paused"
 
         try {
+            val nextRunTime = timeCalculator.calculateNextRunTime(schedule.days, schedule.time)
+            val currentTime = System.currentTimeMillis()
+
+            if (nextRunTime <= currentTime) return "Invalid schedule"
+
             val calendar = Calendar.getInstance()
-            val currentDay = SimpleDateFormat("EEE", Locale.getDefault()).format(calendar.time)
-            val currentTime = calendar.timeInMillis
-
-            // Parse schedule time - handle both formats
-            val (scheduleHour, scheduleMinute) = parseTime(schedule.time)
-
-            // Check if it's today and time hasn't passed
-            if (schedule.days.contains(currentDay)) {
-                val todayScheduleTime = Calendar.getInstance().apply {
-                    set(Calendar.HOUR_OF_DAY, scheduleHour)
-                    set(Calendar.MINUTE, scheduleMinute)
-                    set(Calendar.SECOND, 0)
-                    set(Calendar.MILLISECOND, 0)
-                }
-
-                if (todayScheduleTime.timeInMillis > currentTime) {
-                    return "Today at ${formatTime(scheduleHour, scheduleMinute)}"
-                }
+            val nextRunCalendar = Calendar.getInstance().apply {
+                timeInMillis = nextRunTime
             }
 
-            // Find next occurrence
-            val dayMap = mapOf(
-                "Sun" to Calendar.SUNDAY,
-                "Mon" to Calendar.MONDAY,
-                "Tue" to Calendar.TUESDAY,
-                "Wed" to Calendar.WEDNESDAY,
-                "Thu" to Calendar.THURSDAY,
-                "Fri" to Calendar.FRIDAY,
-                "Sat" to Calendar.SATURDAY
-            )
+            val daysDiff = ((nextRunTime - currentTime) / (24 * 60 * 60 * 1000)).toInt()
+            val (hour, minute) = timeCalculator.parseTime(schedule.time)
 
-            for (i in 1..7) {
-                val nextDay = Calendar.getInstance().apply {
-                    add(Calendar.DAY_OF_YEAR, i)
-                }
-                val dayName = SimpleDateFormat("EEE", Locale.getDefault()).format(nextDay.time)
-
-                if (schedule.days.contains(dayName)) {
-                    return when (i) {
-                        1 -> "Tomorrow at ${formatTime(scheduleHour, scheduleMinute)}"
-                        else -> "$dayName at ${formatTime(scheduleHour, scheduleMinute)}"
-                    }
+            return when (daysDiff) {
+                0 -> "Today at ${formatTime(hour, minute)}"
+                1 -> "Tomorrow at ${formatTime(hour, minute)}"
+                else -> {
+                    val dayName = SimpleDateFormat("EEE", Locale.getDefault()).format(nextRunCalendar.time)
+                    "$dayName at ${formatTime(hour, minute)}"
                 }
             }
-
-            return "Next run not scheduled"
         } catch (e: Exception) {
+            Log.e("ScheduleViewModel", "Error calculating next run", e)
             return "Invalid schedule"
         }
     }

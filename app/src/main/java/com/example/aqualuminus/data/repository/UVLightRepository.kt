@@ -37,7 +37,7 @@ interface UVLightService {
 class UVLightRepository {
 
     // Network Configuration - you might want to move this to a config file or inject it
-    private val ESP32_IP = "192.168.254.199" // change this to your ESP32's IP
+    private val ESP32_IP = "10.230.117.57" // change this to your ESP32's IP
 
     private val retrofit = Retrofit.Builder()
         .baseUrl("http://$ESP32_IP/")
