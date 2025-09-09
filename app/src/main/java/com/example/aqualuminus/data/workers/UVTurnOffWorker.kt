@@ -16,7 +16,7 @@ class UVTurnOffWorker(
         private const val TAG = "UVTurnOffWorker"
     }
 
-    private val uvLightRepository = UVLightRepository()
+    private val uvLightRepository = UVLightRepository(applicationContext)
 
     override suspend fun doWork(): Result {
         return try {

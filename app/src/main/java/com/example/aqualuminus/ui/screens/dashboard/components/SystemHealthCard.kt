@@ -26,6 +26,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,11 +35,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.example.aqualuminus.data.repository.UVLightRepository
 import com.example.aqualuminus.ui.screens.dashboard.model.StatusType
 import com.example.aqualuminus.ui.screens.dashboard.model.SystemStatus
 
 @Composable
-fun SystemHealthCard(systemStatus: SystemStatus) {
+fun SystemHealthCard(
+    systemStatus: SystemStatus,
+    uvLightRepository: UVLightRepository
+) {
+    // Collect connection status from repository
+    val isConnected by uvLightRepository.isConnected.collectAsState(initial = false)
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -130,29 +139,15 @@ fun SystemHealthCard(systemStatus: SystemStatus) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                // Connection Status - now dynamic based on repository
                 StatusRow(
                     label = "Connection Status",
                     value = {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(8.dp)
-                                    .clip(CircleShape)
-                                    .background(Color(0xFF10B981))
-                            )
-                            Text(
-                                text = "Connected",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
+                        ConnectionStatusIndicator(isConnected = isConnected)
                     }
                 )
 
+                // Keep these as static for now since they're not implemented yet
                 StatusRow(
                     label = "Last Maintenance",
                     value = {
@@ -178,6 +173,30 @@ fun SystemHealthCard(systemStatus: SystemStatus) {
                 )
             }
         }
+    }
+}
+
+@Composable
+fun ConnectionStatusIndicator(isConnected: Boolean) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(
+                    if (isConnected) Color(0xFF10B981) // Green for connected
+                    else Color(0xFFEF4444) // Red for disconnected
+                )
+        )
+        Text(
+            text = if (isConnected) "Connected" else "Disconnected",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            fontWeight = FontWeight.Medium
+        )
     }
 }
 

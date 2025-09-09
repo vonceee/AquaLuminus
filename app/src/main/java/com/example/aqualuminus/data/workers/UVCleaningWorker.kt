@@ -21,7 +21,7 @@ class UVCleaningWorker(
         private const val TAG = "UVCleaningWorker"
     }
 
-    private val uvLightRepository = UVLightRepository()
+    private val uvLightRepository = UVLightRepository(applicationContext)
     private val scheduleRepository = ScheduleRepository()
 
     override suspend fun doWork(): Result {

@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -95,7 +96,10 @@ fun AquariumDashboard(
         }
 
         // System Health Status
-        SystemHealthCard(systemStatus = systemStatus)
+        SystemHealthCard(
+            systemStatus = systemStatus,
+            uvLightRepository = dashboardViewModel.uvLightRepository
+        )
 
         // Quick Actions
         QuickActionsCard(
@@ -108,7 +112,8 @@ fun AquariumDashboard(
 // Helper function to create ViewModel with repository
 @Composable
 private fun createDashboardViewModel(): DashboardViewModel {
-    val repository = remember { UVLightRepository() }
+    val context = LocalContext.current
+    val repository = remember { UVLightRepository(context.applicationContext) }
     return viewModel(
         factory = DashboardViewModelFactory(repository)
     )
