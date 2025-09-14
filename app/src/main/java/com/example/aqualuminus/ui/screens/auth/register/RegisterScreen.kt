@@ -1,4 +1,4 @@
-package com.example.aqualuminus.ui.screens.register
+package com.example.aqualuminus.ui.screens.auth.register
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -32,10 +32,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -49,24 +45,13 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-// Register Screen
 @Composable
 fun RegisterScreen(
     onRegisterSuccess: () -> Unit,
     onNavigateToLogin: () -> Unit,
     viewModel: RegisterViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
-    var username by remember { mutableStateOf("") }
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var confirmPassword by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
-    var confirmPasswordVisible by remember { mutableStateOf(false) }
-
-    val isLoading by viewModel.isLoading
-    val errorMessage by viewModel.errorMessage
-    val successMessage by viewModel.successMessage
-
+    val uiState = viewModel.uiState.value
     val keyboardController = LocalSoftwareKeyboardController.current
 
     Box(
@@ -74,11 +59,7 @@ fun RegisterScreen(
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF1E40AF),
-                        Color(0xFF3B82F6),
-                        Color(0xFF60A5FA)
-                    )
+                    colors = listOf(Color(0xFF1E40AF), Color(0xFF3B82F6), Color(0xFF60A5FA))
                 )
             )
     ) {
@@ -90,20 +71,13 @@ fun RegisterScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Register Form Card
             Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.White
-                ),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
                 Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(24.dp),
+                    modifier = Modifier.fillMaxWidth().padding(24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
@@ -115,20 +89,12 @@ fun RegisterScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Username Field
+                    // Username
                     OutlinedTextField(
-                        value = username,
-                        onValueChange = {
-                            username = it
-                            viewModel.clearMessages()
-                        },
+                        value = uiState.username,
+                        onValueChange = viewModel::onUsernameChanged,
                         label = { Text("Username") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Person,
-                                contentDescription = "Username"
-                            )
-                        },
+                        leadingIcon = { Icon(Icons.Default.Person, contentDescription = "Username") },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Text,
@@ -139,20 +105,12 @@ fun RegisterScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Email Field
+                    // Email
                     OutlinedTextField(
-                        value = email,
-                        onValueChange = {
-                            email = it
-                            viewModel.clearMessages()
-                        },
+                        value = uiState.email,
+                        onValueChange = viewModel::onEmailChanged,
                         label = { Text("Email") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Email,
-                                contentDescription = "Email"
-                            )
-                        },
+                        leadingIcon = { Icon(Icons.Default.Email, contentDescription = "Email") },
                         modifier = Modifier.fillMaxWidth(),
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Email,
@@ -163,38 +121,22 @@ fun RegisterScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Password Field
+                    // Password
                     OutlinedTextField(
-                        value = password,
-                        onValueChange = {
-                            password = it
-                            viewModel.clearMessages()
-                        },
+                        value = uiState.password,
+                        onValueChange = viewModel::onPasswordChanged,
                         label = { Text("Password") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Lock,
-                                contentDescription = "Password"
-                            )
-                        },
+                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Password") },
                         trailingIcon = {
-                            IconButton(
-                                onClick = { passwordVisible = !passwordVisible }
-                            ) {
+                            IconButton(onClick = { viewModel.togglePasswordVisibility() }) {
                                 Icon(
-                                    imageVector = Icons.Filled.Visibility,
-                                    contentDescription = if (passwordVisible)
-                                        "Hide password"
-                                    else
-                                        "Show password"
+                                    imageVector = if (uiState.passwordVisible) Icons.Default.Visibility else Icons.Default.Visibility,
+                                    contentDescription = if (uiState.passwordVisible) "Hide" else "Show"
                                 )
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        visualTransformation = if (passwordVisible)
-                            VisualTransformation.None
-                        else
-                            PasswordVisualTransformation(),
+                        visualTransformation = if (uiState.passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Password,
                             imeAction = ImeAction.Next
@@ -204,38 +146,22 @@ fun RegisterScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Confirm Password Field
+                    // Confirm Password
                     OutlinedTextField(
-                        value = confirmPassword,
-                        onValueChange = {
-                            confirmPassword = it
-                            viewModel.clearMessages()
-                        },
+                        value = uiState.confirmPassword,
+                        onValueChange = viewModel::onConfirmPasswordChanged,
                         label = { Text("Confirm Password") },
-                        leadingIcon = {
-                            Icon(
-                                imageVector = Icons.Default.Lock,
-                                contentDescription = "Confirm Password"
-                            )
-                        },
+                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Confirm Password") },
                         trailingIcon = {
-                            IconButton(
-                                onClick = { confirmPasswordVisible = !confirmPasswordVisible }
-                            ) {
+                            IconButton(onClick = { viewModel.toggleConfirmPasswordVisibility() }) {
                                 Icon(
-                                    imageVector = Icons.Default.Visibility,
-                                    contentDescription = if (confirmPasswordVisible)
-                                        "Hide password"
-                                    else
-                                        "Show password"
+                                    imageVector = if (uiState.confirmPasswordVisible) Icons.Default.Visibility else Icons.Default.Visibility,
+                                    contentDescription = if (uiState.confirmPasswordVisible) "Hide" else "Show"
                                 )
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        visualTransformation = if (confirmPasswordVisible)
-                            VisualTransformation.None
-                        else
-                            PasswordVisualTransformation(),
+                        visualTransformation = if (uiState.confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Password,
                             imeAction = ImeAction.Done
@@ -243,28 +169,26 @@ fun RegisterScreen(
                         keyboardActions = KeyboardActions(
                             onDone = {
                                 keyboardController?.hide()
-                                viewModel.register(username, email, password, confirmPassword, onRegisterSuccess)
+                                viewModel.register(onRegisterSuccess)
                             }
                         ),
                         singleLine = true
                     )
 
-                    // Error Message
-                    if (errorMessage.isNotEmpty()) {
+                    if (uiState.errorMessage.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = errorMessage,
+                            text = uiState.errorMessage,
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
 
-                    // Success Message
-                    if (successMessage.isNotEmpty()) {
+                    if (uiState.successMessage.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = successMessage,
+                            text = uiState.successMessage,
                             color = Color(0xFF16A34A),
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.fillMaxWidth()
@@ -273,42 +197,32 @@ fun RegisterScreen(
 
                     Spacer(modifier = Modifier.height(24.dp))
 
-                    // Register Button
                     Button(
                         onClick = {
                             keyboardController?.hide()
-                            viewModel.register(username, email, password, confirmPassword, onRegisterSuccess)
+                            viewModel.register(onRegisterSuccess)
                         },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        enabled = !isLoading &&
-                                username.isNotBlank() &&
-                                email.isNotBlank() &&
-                                password.isNotBlank() &&
-                                confirmPassword.isNotBlank(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF1E40AF)
-                        )
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        enabled = !uiState.isLoading &&
+                                uiState.username.isNotBlank() &&
+                                uiState.email.isNotBlank() &&
+                                uiState.password.isNotBlank() &&
+                                uiState.confirmPassword.isNotBlank(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E40AF))
                     ) {
-                        if (isLoading) {
+                        if (uiState.isLoading) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(20.dp),
                                 color = Color.White,
                                 strokeWidth = 2.dp
                             )
                         } else {
-                            Text(
-                                text = "Create Account",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
+                            Text("Create Account", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    // Sign In Link
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.Center,
@@ -319,19 +233,12 @@ fun RegisterScreen(
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color(0xFF6B7280)
                         )
-
                         OutlinedButton(
                             onClick = onNavigateToLogin,
                             modifier = Modifier.padding(start = 8.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = Color(0xFF1E40AF)
-                            )
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFF1E40AF))
                         ) {
-                            Text(
-                                text = "Sign In",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Medium
-                            )
+                            Text("Sign In", fontSize = 14.sp, fontWeight = FontWeight.Medium)
                         }
                     }
                 }

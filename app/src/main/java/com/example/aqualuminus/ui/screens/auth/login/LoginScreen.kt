@@ -1,4 +1,4 @@
-package com.example.aqualuminus.ui.screens.login
+package com.example.aqualuminus.ui.screens.auth.login
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -34,10 +34,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,13 +54,7 @@ fun LoginScreen(
     onNavigateToRegister: () -> Unit = {},
     viewModel: LoginViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var passwordVisible by remember { mutableStateOf(false) }
-
-    val isLoading by viewModel.isLoading
-    val errorMessage by viewModel.errorMessage
-
+    val uiState = viewModel.uiState.value
     val keyboardController = LocalSoftwareKeyboardController.current
 
     Box(
@@ -155,16 +145,13 @@ fun LoginScreen(
 
                     // Email Field
                     OutlinedTextField(
-                        value = email,
-                        onValueChange = {
-                            email = it
-                            viewModel.clearError()
-                        },
+                        value = uiState.email,
+                        onValueChange = { viewModel.onEmailChanged(it) },
                         label = { Text("Email") },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Email,
-                                contentDescription = "Email"
+                                contentDescription = null
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -179,39 +166,29 @@ fun LoginScreen(
 
                     // Password Field
                     OutlinedTextField(
-                        value = password,
-                        onValueChange = {
-                            password = it
-                            viewModel.clearError()
-                        },
+                        value = uiState.password,
+                        onValueChange = { viewModel.onPasswordChanged(it) },
                         label = { Text("Password") },
                         leadingIcon = {
                             Icon(
                                 imageVector = Icons.Default.Lock,
-                                contentDescription = "Password"
+                                contentDescription = null
                             )
                         },
                         trailingIcon = {
-                            IconButton(
-                                onClick = { passwordVisible = !passwordVisible }
-                            ) {
+                            IconButton(onClick = { viewModel.togglePasswordVisibility() }) {
                                 Icon(
-                                    imageVector = if (passwordVisible)
+                                    imageVector = if (uiState.passwordVisible)
                                         Icons.Filled.VisibilityOff
                                     else
                                         Icons.Filled.Visibility,
-                                    contentDescription = if (passwordVisible)
-                                        "Hide password"
-                                    else
-                                        "Show password"
+                                    contentDescription = if (uiState.passwordVisible) "Hide" else "Show"
                                 )
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        visualTransformation = if (passwordVisible)
-                            VisualTransformation.None
-                        else
-                            PasswordVisualTransformation(),
+                        visualTransformation = if (uiState.passwordVisible)
+                            VisualTransformation.None else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(
                             keyboardType = KeyboardType.Password,
                             imeAction = ImeAction.Done
@@ -219,17 +196,17 @@ fun LoginScreen(
                         keyboardActions = KeyboardActions(
                             onDone = {
                                 keyboardController?.hide()
-                                viewModel.login(email, password, onLoginSuccess)
+                                viewModel.login(onLoginSuccess)
                             }
                         ),
                         singleLine = true
                     )
 
                     // Error Message
-                    if (errorMessage.isNotEmpty()) {
+                    if (uiState.errorMessage.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
-                            text = errorMessage,
+                            text = uiState.errorMessage,
                             color = MaterialTheme.colorScheme.error,
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.fillMaxWidth()
@@ -242,28 +219,20 @@ fun LoginScreen(
                     Button(
                         onClick = {
                             keyboardController?.hide()
-                            viewModel.login(email, password, onLoginSuccess)
+                            viewModel.login(onLoginSuccess)
                         },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        enabled = !isLoading && email.isNotBlank() && password.isNotBlank(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF1E40AF)
-                        )
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        enabled = !uiState.isLoading && uiState.email.isNotBlank() && uiState.password.isNotBlank(),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E40AF))
                     ) {
-                        if (isLoading) {
+                        if (uiState.isLoading) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(20.dp),
                                 color = Color.White,
                                 strokeWidth = 2.dp
                             )
                         } else {
-                            Text(
-                                text = "Sign In",
-                                fontSize = 16.sp,
-                                fontWeight = FontWeight.SemiBold
-                            )
+                            Text("Sign In", fontSize = 16.sp, fontWeight = FontWeight.SemiBold)
                         }
                     }
 

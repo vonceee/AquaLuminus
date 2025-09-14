@@ -1,15 +1,18 @@
 package com.example.aqualuminus.ui.screens.dashboard
 
-import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.aqualuminus.data.manager.BackgroundTaskManager
+import com.example.aqualuminus.data.manager.DeviceConnectionManager
 import com.example.aqualuminus.data.repository.UVLightRepository
+import com.example.aqualuminus.ui.screens.dashboard.controllers.UVLightController
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -18,82 +21,223 @@ class DashboardViewModel(
     private val _uvLightRepository: UVLightRepository
 ) : ViewModel() {
 
-    private val auth = FirebaseAuth.getInstance()
+    // MARK: - Managers
+    private val userManager = UserManager()
+    private val connectionManager = DeviceConnectionManager(_uvLightRepository)
+    private val uvLightController = UVLightController(_uvLightRepository)
+    private val taskManager = BackgroundTaskManager(viewModelScope)
 
-    // Expose the repository for SystemHealthCard
+    // MARK: - Expose Repository (for SystemHealthCard)
     val uvLightRepository: UVLightRepository get() = _uvLightRepository
 
-    // Firebase User State
+    // MARK: - UI State Properties
+
+    // User State
     var userName by mutableStateOf("User")
         private set
-
     var userPhotoUrl by mutableStateOf<String?>(null)
         private set
 
-    // UV Light UI State
+    // UV Light State
     var uvLightOn by mutableStateOf(false)
         private set
-
-    var isLoading by mutableStateOf(false)
-        private set
-
-    var error by mutableStateOf<String?>(null)
-        private set
-
-    var isConnected by mutableStateOf(false)
-        private set
-
     var uvLightDuration by mutableStateOf(0L)
         private set
 
-    // Connection state
+    // Connection State
+    var isConnected by mutableStateOf(false)
+        private set
     var connectionStatus by mutableStateOf("Disconnected")
         private set
-
     var isDiscovering by mutableStateOf(false)
         private set
 
+    // UI State
+    var isLoading by mutableStateOf(false)
+        private set
+    var error by mutableStateOf<String?>(null)
+        private set
+
+    // MARK: - Initialization
+
     init {
         loadUserData()
-        observeConnectionStatus()
-        observeConnectionStatusText()
-        observeUVLightDuration()
-        observeDiscovering()
-
-        // Try to connect to device first, then start monitoring
+        setupObservers()
         connectToDevice()
     }
 
-    // Firebase User Methods
-    private fun loadUserData() {
-        val currentUser = auth.currentUser
-        currentUser?.let { user ->
-            userName = user.displayName
-                ?: user.email
-                        ?: "User"
-            userPhotoUrl = user.photoUrl?.toString()
-        }
-    }
+    // MARK: - User Management Delegation
 
     fun refreshUserData() {
-        auth.currentUser?.reload()?.addOnCompleteListener {
+        userManager.refreshUserData {
             loadUserData()
         }
     }
 
-    fun getCurrentUser(): FirebaseUser? {
-        return auth.currentUser
+    fun getCurrentUser(): FirebaseUser? = userManager.getCurrentUser()
+
+    private fun loadUserData() {
+        userName = userManager.getUserDisplayName()
+        userPhotoUrl = userManager.getUserPhotoUrl()
     }
 
-    // Connection and monitoring observers
+    // MARK: - Connection Management Delegation
+
+    fun connectToDevice() {
+        executeWithLoading("connecting to device") {
+            val result = connectionManager.connectToDevice()
+            result.fold(
+                onSuccess = {
+                    // connection successful - observers will handle state updates
+                },
+                onFailure = { exception ->
+                    error = exception.message ?: "Connection failed"
+                }
+            )
+        }
+    }
+
+    fun retryConnection() {
+        connectToDevice()
+    }
+
+    fun forceDiscovery() {
+        executeWithLoading("discovering devices") {
+            val result = connectionManager.forceDiscovery()
+            result.fold(
+                onSuccess = {
+                    // Discovery successful
+                },
+                onFailure = { exception ->
+                    error = exception.message ?: "Discovery failed"
+                }
+            )
+        }
+    }
+
+    fun disconnect() {
+        viewModelScope.launch {
+            taskManager.stopAllTasks()
+            connectionManager.disconnect()
+            resetConnectionState()
+        }
+    }
+
+    fun isOnSameNetwork(): Boolean = connectionManager.isOnSameNetwork()
+    fun getCurrentWiFiName(): String? = connectionManager.getCurrentWiFiName()
+
+    // MARK: - UV Light Control Delegation
+
+    fun toggleUVLight() {
+        executeUVCommand("toggle") {
+            uvLightController.toggleUVLight()
+        }
+    }
+
+    fun turnOnUVLight() {
+        executeUVCommand("turn on") {
+            uvLightController.turnOnUVLight()
+        }
+    }
+
+    fun turnOffUVLight() {
+        executeUVCommand("turn off") {
+            uvLightController.turnOffUVLight()
+        }
+    }
+
+    fun refreshUVStatus() {
+        if (!isConnected) {
+            error = "Not connected to device"
+            return
+        }
+
+        executeWithLoading("refreshing UV status") {
+            val result = uvLightController.getUVLightStatus()
+            result.fold(
+                onSuccess = { status ->
+                    uvLightOn = status
+                },
+                onFailure = { exception ->
+                    error = "Failed to get UV status"
+                }
+            )
+        }
+    }
+
+    fun getFormattedDuration(): String {
+        return uvLightController.formatDuration(uvLightDuration)
+    }
+
+    // MARK: - UI State Management
+
+    fun clearError() {
+        error = null
+    }
+
+    private fun executeUVCommand(
+        actionName: String,
+        command: suspend () -> Result<Boolean>
+    ) {
+        if (!isConnected) {
+            error = "No Device Detected"
+            return
+        }
+
+        executeWithLoading("UV light $actionName") {
+            val result = command()
+            result.fold(
+                onSuccess = { newState ->
+                    uvLightOn = newState
+                },
+                onFailure = { exception ->
+                    handleCommandFailure(actionName, exception)
+                }
+            )
+        }
+    }
+
+    private fun handleCommandFailure(actionName: String, exception: Throwable) {
+        error = "Failed to $actionName UV light: ${exception.message}"
+
+        // If HTTP error, might be connection issue
+        if (exception.message?.contains("HTTP") == true) {
+            isConnected = false
+        }
+    }
+
+    private fun executeWithLoading(
+        operation: String,
+        action: suspend () -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                isLoading = true
+                error = null
+                action()
+            } catch (e: Exception) {
+                error = "Error during $operation: ${e.message}"
+            } finally {
+                isLoading = false
+            }
+        }
+    }
+
+    // MARK: - Observers and Background Tasks
+
+    private fun setupObservers() {
+        observeConnectionStatus()
+        observeConnectionStatusText()
+        observeUVLightDuration()
+        observeDiscovering()
+    }
+
     private fun observeConnectionStatus() {
         viewModelScope.launch {
             _uvLightRepository.isConnected.collectLatest { connected ->
                 isConnected = connected
                 if (connected) {
-                    // Start monitoring only after connection is established
-                    startUVLightMonitoring()
-                    startDurationUpdater()
+                    startBackgroundTasks()
                     refreshUVStatus()
                 }
             }
@@ -124,258 +268,224 @@ class DashboardViewModel(
         }
     }
 
-    // Device connection methods
-    fun connectToDevice() {
-        viewModelScope.launch {
-            try {
-                isLoading = true
-                error = null
+    private fun startBackgroundTasks() {
+        // Delegate task management to BackgroundTaskManager
+        taskManager.startStatusMonitoring(
+            shouldMonitor = { !isLoading && isConnected },
+            onStatusCheck = { checkUVLightStatus() }
+        )
 
-                Log.d("DashboardViewModel", "Starting device connection...")
-
-                // Use the enhanced connection method from repository
-                val result = _uvLightRepository.findAndConnectAfterSetup()
-
-                if (result.isSuccess) {
-                    Log.d("DashboardViewModel", "Successfully connected to device")
-                    // Connection observers will handle starting monitoring
-                } else {
-                    val errorMsg = result.exceptionOrNull()?.message ?: "Connection failed"
-                    Log.e("DashboardViewModel", "Connection failed: $errorMsg")
-                    error = "Device not found. Make sure device is configured and both are on same WiFi."
-                }
-            } catch (e: Exception) {
-                Log.e("DashboardViewModel", "Connection error", e)
-                error = "Connection error: ${e.message}"
-            } finally {
-                isLoading = false
-            }
-        }
+        taskManager.startDurationTracking(
+            shouldTrack = { uvLightOn && isConnected },
+            onUpdateDuration = { updateDuration() }
+        )
     }
 
-    fun retryConnection() {
-        connectToDevice()
-    }
-
-    fun forceDiscovery() {
-        viewModelScope.launch {
-            try {
-                isLoading = true
-                error = null
-
-                Log.d("DashboardViewModel", "Starting device discovery...")
-                _uvLightRepository.startDeviceDiscovery()
-
-                // Wait for discovery to complete
-                delay(8000)
-
-                // Try to connect to discovered devices
-                val result = _uvLightRepository.autoConnect()
-
-                if (result.isSuccess) {
-                    Log.d("DashboardViewModel", "Discovery and connection successful")
-                } else {
-                    error = "No devices found. Check WiFi connection and device status."
-                }
-
-            } catch (e: Exception) {
-                Log.e("DashboardViewModel", "Discovery error", e)
-                error = "Discovery failed: ${e.message}"
-            } finally {
-                isLoading = false
-            }
-        }
-    }
-
-    private var monitoringJob: kotlinx.coroutines.Job? = null
-
-    private fun startUVLightMonitoring() {
-        // Cancel existing monitoring job
-        monitoringJob?.cancel()
-
-        monitoringJob = viewModelScope.launch {
-            while (true) {
-                try {
-                    if (!isLoading && isConnected) { // Only monitor when connected and not during user actions
-                        val result = _uvLightRepository.getUVLightStatus()
-                        result.fold(
-                            onSuccess = { status ->
-                                uvLightOn = status
-                                // Clear connection errors only
-                                if (error?.contains("Connection") == true || error?.contains("not found") == true) {
-                                    error = null
-                                }
-                            },
-                            onFailure = { exception ->
-                                // Don't override error if user action is in progress
-                                if (!isLoading) {
-                                    isConnected = false
-                                    error = "Connection lost to device"
-                                    Log.e("DashboardViewModel", "UV status check failed", exception)
-                                }
-                            }
-                        )
-                    }
-                    delay(5000) // Poll every 5 seconds
-                } catch (e: Exception) {
-                    Log.e("DashboardViewModel", "Monitoring error", e)
-                    delay(10000) // Wait longer on error
-                }
-            }
-        }
-    }
-
-    private var durationJob: kotlinx.coroutines.Job? = null
-
-    private fun startDurationUpdater() {
-        // Cancel existing duration job
-        durationJob?.cancel()
-
-        durationJob = viewModelScope.launch {
-            while (true) {
-                if (uvLightOn && isConnected) {
-                    // Update duration from repository every second when UV light is on
-                    uvLightDuration = _uvLightRepository.getCurrentDuration()
-                }
-                delay(1000)
-            }
-        }
-    }
-
-    fun refreshUVStatus() {
-        viewModelScope.launch {
-            if (!isConnected) {
-                error = "Not connected to device"
-                return@launch
-            }
-
-            isLoading = true
-            error = null
-
-            val result = _uvLightRepository.getUVLightStatus()
-            result.fold(
-                onSuccess = { status ->
-                    uvLightOn = status
-                    Log.d("DashboardViewModel", "UV Status refreshed: $status")
-                },
-                onFailure = { exception ->
-                    error = "Failed to get UV status"
-                    Log.e("DashboardViewModel", "Failed to refresh UV status", exception)
-                }
-            )
-
-            isLoading = false
-        }
-    }
-
-    fun toggleUVLight() {
-        if (!isConnected) {
-            error = "Not connected to device"
-            return
-        }
-
-        viewModelScope.launch {
-            executeUVCommand("toggle") {
-                _uvLightRepository.toggleUVLight()
-            }
-        }
-    }
-
-    fun turnOnUVLight() {
-        if (!isConnected) {
-            error = "Not connected to device"
-            return
-        }
-
-        viewModelScope.launch {
-            executeUVCommand("turn on") {
-                _uvLightRepository.turnOnUVLight()
-            }
-        }
-    }
-
-    fun turnOffUVLight() {
-        if (!isConnected) {
-            error = "Not connected to device"
-            return
-        }
-
-        viewModelScope.launch {
-            executeUVCommand("turn off") {
-                _uvLightRepository.turnOffUVLight()
-            }
-        }
-    }
-
-    private suspend fun executeUVCommand(
-        actionName: String,
-        command: suspend () -> Result<Boolean>
-    ) {
-        isLoading = true
-        error = null
-
-        val result = command()
+    private suspend fun checkUVLightStatus() {
+        val result = uvLightController.getUVLightStatus()
         result.fold(
-            onSuccess = { newState ->
-                uvLightOn = newState
-                Log.d("DashboardViewModel", "UV light $actionName successful: $newState")
+            onSuccess = { status ->
+                uvLightOn = status
+                // clear connection errors only
+                if (isConnectionError()) {
+                    error = null
+                }
             },
             onFailure = { exception ->
-                error = "Failed to $actionName UV light: ${exception.message}"
-                Log.e("DashboardViewModel", "Failed to $actionName UV light", exception)
-
-                // If command fails, might be connection issue
-                if (exception.message?.contains("HTTP") == true) {
+                if (!isLoading) {
                     isConnected = false
+                    error = "Connection lost to device"
                 }
             }
         )
-
-        isLoading = false
     }
 
-    fun clearError() {
-        error = null
+    private fun updateDuration() {
+        uvLightDuration = uvLightController.getCurrentDuration()
     }
 
-    // Disconnect method
-    fun disconnect() {
-        viewModelScope.launch {
-            monitoringJob?.cancel()
-            durationJob?.cancel()
-            _uvLightRepository.disconnect()
-
-            isConnected = false
-            uvLightOn = false
-            uvLightDuration = 0L
-            connectionStatus = "Disconnected"
-        }
+    private fun isConnectionError(): Boolean {
+        return error?.contains("Connection") == true ||
+                error?.contains("not found") == true
     }
 
-    // Get formatted duration string
-    fun getFormattedDuration(): String {
-        return _uvLightRepository.formatDuration(uvLightDuration)
+    private fun resetConnectionState() {
+        isConnected = false
+        uvLightOn = false
+        uvLightDuration = 0L
+        connectionStatus = "Disconnected"
     }
 
-    // Check if on same WiFi network
-    fun isOnSameNetwork(): Boolean {
-        return _uvLightRepository.isOnSameNetwork()
-    }
-
-    // Get current WiFi name
-    fun getCurrentWiFiName(): String? {
-        return _uvLightRepository.getCurrentWiFiName()
-    }
+    // MARK: - Cleanup
 
     override fun onCleared() {
         super.onCleared()
-        monitoringJob?.cancel()
-        durationJob?.cancel()
+        taskManager.stopAllTasks()
         _uvLightRepository.cleanup()
     }
 }
 
-// ViewModelFactory for manual dependency injection
+// MARK: - Manager Classes (Inner classes or separate files)
+
+private class UserManager {
+    private val auth = FirebaseAuth.getInstance()
+
+    fun getCurrentUser(): FirebaseUser? = auth.currentUser
+
+    fun getUserDisplayName(): String {
+        return auth.currentUser?.let { user ->
+            user.displayName ?: user.email ?: "User"
+        } ?: "User"
+    }
+
+    fun getUserPhotoUrl(): String? {
+        return auth.currentUser?.photoUrl?.toString()
+    }
+
+    fun refreshUserData(onComplete: () -> Unit) {
+        auth.currentUser?.reload()?.addOnCompleteListener {
+            onComplete()
+        }
+    }
+}
+
+private class DeviceConnectionManager(
+    private val uvLightRepository: UVLightRepository
+) {
+    companion object {
+        private const val DISCOVERY_TIMEOUT = 8000L
+    }
+
+    suspend fun connectToDevice(): Result<Unit> {
+        return try {
+            val result = uvLightRepository.findAndConnectAfterSetup()
+
+            if (result.isSuccess) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("No Device Detected."))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun forceDiscovery(): Result<Unit> {
+        return try {
+            uvLightRepository.startDeviceDiscovery()
+            delay(DISCOVERY_TIMEOUT)
+
+            val result = uvLightRepository.autoConnect()
+            if (result.isSuccess) {
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("No Device Detected."))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    fun disconnect() {
+        uvLightRepository.disconnect()
+    }
+
+    fun isOnSameNetwork(): Boolean = uvLightRepository.isOnSameNetwork()
+    fun getCurrentWiFiName(): String? = uvLightRepository.getCurrentWiFiName()
+}
+
+private class UVLightController(
+    private val uvLightRepository: UVLightRepository
+) {
+    suspend fun toggleUVLight(): Result<Boolean> {
+        return uvLightRepository.toggleUVLight()
+    }
+
+    suspend fun turnOnUVLight(): Result<Boolean> {
+        return uvLightRepository.turnOnUVLight()
+    }
+
+    suspend fun turnOffUVLight(): Result<Boolean> {
+        return uvLightRepository.turnOffUVLight()
+    }
+
+    suspend fun getUVLightStatus(): Result<Boolean> {
+        return uvLightRepository.getUVLightStatus()
+    }
+
+    fun formatDuration(duration: Long): String {
+        return uvLightRepository.formatDuration(duration)
+    }
+
+    fun getCurrentDuration(): Long {
+        return uvLightRepository.getCurrentDuration()
+    }
+}
+
+private class BackgroundTaskManager(
+    private val coroutineScope: kotlinx.coroutines.CoroutineScope
+) {
+    companion object {
+        private const val STATUS_CHECK_INTERVAL = 5000L
+        private const val DURATION_UPDATE_INTERVAL = 1000L
+        private const val ERROR_RETRY_INTERVAL = 10000L
+    }
+
+    private var monitoringJob: Job? = null
+    private var durationJob: Job? = null
+
+    fun startStatusMonitoring(
+        shouldMonitor: () -> Boolean,
+        onStatusCheck: suspend () -> Unit
+    ) {
+        stopStatusMonitoring()
+        monitoringJob = coroutineScope.launch {
+            while (true) {
+                try {
+                    if (shouldMonitor()) {
+                        onStatusCheck()
+                    }
+                    delay(STATUS_CHECK_INTERVAL)
+                } catch (e: Exception) {
+                    delay(ERROR_RETRY_INTERVAL)
+                }
+            }
+        }
+    }
+
+    fun startDurationTracking(
+        shouldTrack: () -> Boolean,
+        onUpdateDuration: () -> Unit
+    ) {
+        stopDurationTracking()
+        durationJob = coroutineScope.launch {
+            while (true) {
+                if (shouldTrack()) {
+                    onUpdateDuration()
+                }
+                delay(DURATION_UPDATE_INTERVAL)
+            }
+        }
+    }
+
+    fun stopAllTasks() {
+        stopStatusMonitoring()
+        stopDurationTracking()
+    }
+
+    private fun stopStatusMonitoring() {
+        monitoringJob?.cancel()
+        monitoringJob = null
+    }
+
+    private fun stopDurationTracking() {
+        durationJob?.cancel()
+        durationJob = null
+    }
+}
+
+// MARK: - ViewModelFactory
+
 class DashboardViewModelFactory(
     private val uvLightRepository: UVLightRepository
 ) : ViewModelProvider.Factory {

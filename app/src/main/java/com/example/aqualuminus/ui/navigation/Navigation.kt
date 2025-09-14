@@ -1,6 +1,5 @@
 package com.example.aqualuminus.ui.navigation
 
-import android.R.attr.type
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavHostController
@@ -10,10 +9,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.aqualuminus.data.auth.AuthState
+import com.example.aqualuminus.ui.screens.auth.login.LoginScreen
+import com.example.aqualuminus.ui.screens.auth.register.RegisterScreen
 import com.example.aqualuminus.ui.screens.dashboard.AquariumDashboard
-import com.example.aqualuminus.ui.screens.login.LoginScreen
 import com.example.aqualuminus.ui.screens.profile.ProfileScreen
-import com.example.aqualuminus.ui.screens.register.RegisterScreen
 import com.example.aqualuminus.ui.screens.schedule.ScheduleCleanScreen
 import com.example.aqualuminus.ui.screens.schedule.SchedulesListScreen
 import com.example.aqualuminus.ui.screens.watertest.WaterTestScreen

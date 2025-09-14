@@ -4,69 +4,18 @@ import android.content.Context
 import android.net.nsd.NsdManager
 import android.net.nsd.NsdServiceInfo
 import android.net.wifi.WifiManager
+import com.example.aqualuminus.data.model.DeviceInfo
+import com.example.aqualuminus.data.model.DiscoveredDevice
+import com.example.aqualuminus.data.model.UVLightResponse
+import com.example.aqualuminus.data.network.UVLightService
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.GET
-import retrofit2.http.POST
 import java.net.InetAddress
 import java.util.concurrent.ConcurrentHashMap
-
-// Data classes for API responses
-data class UVLightResponse(
-    val success: Boolean = true,
-    val uvLightOn: Boolean,
-    val status: String? = null,
-    val message: String? = null,
-    val timestamp: Long,
-    val device: String? = null
-)
-
-data class DeviceInfo(
-    val device: String,
-    val version: String,
-    val ip: String,
-    val mac: String,
-    val rssi: Int?,
-    val hostname: String?
-)
-
-data class DiscoveredDevice(
-    val name: String,
-    val ip: String,
-    val port: Int,
-    val hostname: String? = null
-)
-
-data class WiFiSetupResponse(
-    val success: Boolean,
-    val ip: String?,
-    val message: String,
-    val device: String? = null,
-    val hostname: String? = null,
-    val setup_complete: Boolean = false
-)
-
-// Retrofit service interface
-interface UVLightService {
-    @GET("api/status")
-    suspend fun getStatus(): Response<UVLightResponse>
-
-    @POST("api/on")
-    suspend fun turnOn(): Response<UVLightResponse>
-
-    @POST("api/off")
-    suspend fun turnOff(): Response<UVLightResponse>
-
-    @POST("api/toggle")
-    suspend fun toggle(): Response<UVLightResponse>
-
-    @GET("api/info")
-    suspend fun getDeviceInfo(): Response<DeviceInfo>
-}
 
 class UVLightRepository(private val context: Context) {
 
@@ -106,82 +55,6 @@ class UVLightRepository(private val context: Context) {
 
     private val discoveredDevicesMap = ConcurrentHashMap<String, DiscoveredDevice>()
     private var discoveryListener: NsdManager.DiscoveryListener? = null
-
-    /**
-     * Start discovering AquaLuminus devices on the network
-     */
-
-
-    /*fun startDeviceDiscovery() {
-        if (_isDiscovering.value) return
-
-        _isDiscovering.value = true
-        _connectionStatus.value = "Discovering devices..."
-        discoveredDevicesMap.clear()
-
-        discoveryListener = object : NsdManager.DiscoveryListener {
-            override fun onStartDiscoveryFailed(serviceType: String, errorCode: Int) {
-                _isDiscovering.value = false
-                _connectionStatus.value = "Discovery failed"
-            }
-
-            override fun onStopDiscoveryFailed(serviceType: String, errorCode: Int) {
-                _isDiscovering.value = false
-            }
-
-            override fun onDiscoveryStarted(serviceType: String) {
-                _connectionStatus.value = "Scanning network..."
-            }
-
-            override fun onDiscoveryStopped(serviceType: String) {
-                _isDiscovering.value = false
-                _connectionStatus.value = if (discoveredDevicesMap.isEmpty()) {
-                    "No devices found"
-                } else {
-                    "${discoveredDevicesMap.size} device(s) found"
-                }
-            }
-
-            override fun onServiceFound(serviceInfo: NsdServiceInfo) {
-                if (serviceInfo.serviceName.contains("AquaLuminus") ||
-                    serviceInfo.serviceType.contains("_http._tcp")) {
-                    nsdManager.resolveService(serviceInfo, object : NsdManager.ResolveListener {
-                        override fun onResolveFailed(serviceInfo: NsdServiceInfo, errorCode: Int) {
-                            // Failed to resolve
-                        }
-
-                        override fun onServiceResolved(serviceInfo: NsdServiceInfo) {
-                            val device = DiscoveredDevice(
-                                name = serviceInfo.serviceName,
-                                ip = serviceInfo.host.hostAddress ?: "",
-                                port = serviceInfo.port,
-                                hostname = serviceInfo.serviceName
-                            )
-
-                            if (device.ip.isNotEmpty()) {
-                                discoveredDevicesMap[device.ip] = device
-                                _discoveredDevices.value = discoveredDevicesMap.values.toList()
-                            }
-                        }
-                    })
-                }
-            }
-
-            override fun onServiceLost(serviceInfo: NsdServiceInfo) {
-                serviceInfo.host?.hostAddress?.let { ip ->
-                    discoveredDevicesMap.remove(ip)
-                    _discoveredDevices.value = discoveredDevicesMap.values.toList()
-                }
-            }
-        }
-
-        try {
-            nsdManager.discoverServices("_http._tcp", NsdManager.PROTOCOL_DNS_SD, discoveryListener)
-        } catch (e: Exception) {
-            _isDiscovering.value = false
-            _connectionStatus.value = "Discovery error: ${e.message}"
-        }
-    }*/
 
     /**
      * Stop device discovery
