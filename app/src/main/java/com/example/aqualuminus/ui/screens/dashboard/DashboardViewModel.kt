@@ -1,8 +1,5 @@
 package com.example.aqualuminus.ui.screens.dashboard
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -14,12 +11,17 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class DashboardViewModel(
     private val _uvLightRepository: UVLightRepository
 ) : ViewModel() {
+
+    // MARK: - UI State Management
+    private val uiStateManager = DashboardUiStateManager()
+    val uiState: StateFlow<DashboardUiState> = uiStateManager.uiState
 
     // MARK: - Managers
     private val userManager = UserManager()
@@ -30,34 +32,6 @@ class DashboardViewModel(
     // MARK: - Expose Repository (for SystemHealthCard)
     val uvLightRepository: UVLightRepository get() = _uvLightRepository
 
-    // MARK: - UI State Properties
-
-    // User State
-    var userName by mutableStateOf("User")
-        private set
-    var userPhotoUrl by mutableStateOf<String?>(null)
-        private set
-
-    // UV Light State
-    var uvLightOn by mutableStateOf(false)
-        private set
-    var uvLightDuration by mutableStateOf(0L)
-        private set
-
-    // Connection State
-    var isConnected by mutableStateOf(false)
-        private set
-    var connectionStatus by mutableStateOf("Disconnected")
-        private set
-    var isDiscovering by mutableStateOf(false)
-        private set
-
-    // UI State
-    var isLoading by mutableStateOf(false)
-        private set
-    var error by mutableStateOf<String?>(null)
-        private set
-
     // MARK: - Initialization
 
     init {
@@ -66,67 +40,7 @@ class DashboardViewModel(
         connectToDevice()
     }
 
-    // MARK: - User Management Delegation
-
-    fun refreshUserData() {
-        userManager.refreshUserData {
-            loadUserData()
-        }
-    }
-
-    fun getCurrentUser(): FirebaseUser? = userManager.getCurrentUser()
-
-    private fun loadUserData() {
-        userName = userManager.getUserDisplayName()
-        userPhotoUrl = userManager.getUserPhotoUrl()
-    }
-
-    // MARK: - Connection Management Delegation
-
-    fun connectToDevice() {
-        executeWithLoading("connecting to device") {
-            val result = connectionManager.connectToDevice()
-            result.fold(
-                onSuccess = {
-                    // connection successful - observers will handle state updates
-                },
-                onFailure = { exception ->
-                    error = exception.message ?: "Connection failed"
-                }
-            )
-        }
-    }
-
-    fun retryConnection() {
-        connectToDevice()
-    }
-
-    fun forceDiscovery() {
-        executeWithLoading("discovering devices") {
-            val result = connectionManager.forceDiscovery()
-            result.fold(
-                onSuccess = {
-                    // Discovery successful
-                },
-                onFailure = { exception ->
-                    error = exception.message ?: "Discovery failed"
-                }
-            )
-        }
-    }
-
-    fun disconnect() {
-        viewModelScope.launch {
-            taskManager.stopAllTasks()
-            connectionManager.disconnect()
-            resetConnectionState()
-        }
-    }
-
-    fun isOnSameNetwork(): Boolean = connectionManager.isOnSameNetwork()
-    fun getCurrentWiFiName(): String? = connectionManager.getCurrentWiFiName()
-
-    // MARK: - UV Light Control Delegation
+    // MARK: - Public API Methods
 
     fun toggleUVLight() {
         executeUVCommand("toggle") {
@@ -147,8 +61,8 @@ class DashboardViewModel(
     }
 
     fun refreshUVStatus() {
-        if (!isConnected) {
-            error = "Not connected to device"
+        if (!uiState.value.isConnected) {
+            uiStateManager.setError("Not connected to device")
             return
         }
 
@@ -156,31 +70,92 @@ class DashboardViewModel(
             val result = uvLightController.getUVLightStatus()
             result.fold(
                 onSuccess = { status ->
-                    uvLightOn = status
+                    uiStateManager.updateUVLightState(status, uiState.value.uvLightDuration)
                 },
                 onFailure = { exception ->
-                    error = "Failed to get UV status"
+                    uiStateManager.setError("Failed to get UV status")
                 }
             )
         }
     }
 
-    fun getFormattedDuration(): String {
-        return uvLightController.formatDuration(uvLightDuration)
-    }
-
-    // MARK: - UI State Management
-
     fun clearError() {
-        error = null
+        uiStateManager.clearError()
     }
+
+    fun getFormattedDuration(): String {
+        return uvLightController.formatDuration(uiState.value.uvLightDuration)
+    }
+
+    // MARK: - User Management
+
+    fun refreshUserData() {
+        userManager.refreshUserData {
+            loadUserData()
+        }
+    }
+
+    fun getCurrentUser(): FirebaseUser? = userManager.getCurrentUser()
+
+    private fun loadUserData() {
+        val userName = userManager.getUserDisplayName()
+        val userPhotoUrl = userManager.getUserPhotoUrl()
+        uiStateManager.updateUserInfo(userName, userPhotoUrl)
+    }
+
+    // MARK: - Connection Management
+
+    fun connectToDevice() {
+        executeWithLoading("connecting to device") {
+            val result = connectionManager.connectToDevice()
+            result.fold(
+                onSuccess = {
+                    // connection successful - observers will handle state updates
+                },
+                onFailure = { exception ->
+                    uiStateManager.setError(exception.message ?: "Connection failed")
+                }
+            )
+        }
+    }
+
+    fun retryConnection() {
+        connectToDevice()
+    }
+
+    fun forceDiscovery() {
+        executeWithLoading("discovering devices") {
+            val result = connectionManager.forceDiscovery()
+            result.fold(
+                onSuccess = {
+                    // Discovery successful
+                },
+                onFailure = { exception ->
+                    uiStateManager.setError(exception.message ?: "Discovery failed")
+                }
+            )
+        }
+    }
+
+    fun disconnect() {
+        viewModelScope.launch {
+            taskManager.stopAllTasks()
+            connectionManager.disconnect()
+            resetConnectionState()
+        }
+    }
+
+    fun isOnSameNetwork(): Boolean = connectionManager.isOnSameNetwork()
+    fun getCurrentWiFiName(): String? = connectionManager.getCurrentWiFiName()
+
+    // MARK: - Private Helper Methods
 
     private fun executeUVCommand(
         actionName: String,
         command: suspend () -> Result<Boolean>
     ) {
-        if (!isConnected) {
-            error = "No Device Detected"
+        if (!uiState.value.isConnected) {
+            uiStateManager.setError("No Device Detected")
             return
         }
 
@@ -188,7 +163,7 @@ class DashboardViewModel(
             val result = command()
             result.fold(
                 onSuccess = { newState ->
-                    uvLightOn = newState
+                    uiStateManager.updateUVLightState(newState, uiState.value.uvLightDuration)
                 },
                 onFailure = { exception ->
                     handleCommandFailure(actionName, exception)
@@ -198,11 +173,11 @@ class DashboardViewModel(
     }
 
     private fun handleCommandFailure(actionName: String, exception: Throwable) {
-        error = "Failed to $actionName UV light: ${exception.message}"
+        uiStateManager.setError("Failed to $actionName UV light: ${exception.message}")
 
         // If HTTP error, might be connection issue
         if (exception.message?.contains("HTTP") == true) {
-            isConnected = false
+            uiStateManager.updateConnectionState(false, "Connection Lost")
         }
     }
 
@@ -212,13 +187,13 @@ class DashboardViewModel(
     ) {
         viewModelScope.launch {
             try {
-                isLoading = true
-                error = null
+                uiStateManager.setLoading(true)
+                uiStateManager.clearError()
                 action()
             } catch (e: Exception) {
-                error = "Error during $operation: ${e.message}"
+                uiStateManager.setError("Error during $operation: ${e.message}")
             } finally {
-                isLoading = false
+                uiStateManager.setLoading(false)
             }
         }
     }
@@ -235,7 +210,10 @@ class DashboardViewModel(
     private fun observeConnectionStatus() {
         viewModelScope.launch {
             _uvLightRepository.isConnected.collectLatest { connected ->
-                isConnected = connected
+                uiStateManager.updateConnectionState(
+                    connected = connected,
+                    status = if (connected) "Connected" else "Disconnected"
+                )
                 if (connected) {
                     startBackgroundTasks()
                     refreshUVStatus()
@@ -247,7 +225,11 @@ class DashboardViewModel(
     private fun observeConnectionStatusText() {
         viewModelScope.launch {
             _uvLightRepository.connectionStatus.collectLatest { status ->
-                connectionStatus = status
+                uiStateManager.updateConnectionState(
+                    connected = uiState.value.isConnected,
+                    status = status,
+                    discovering = uiState.value.isDiscovering
+                )
             }
         }
     }
@@ -255,7 +237,7 @@ class DashboardViewModel(
     private fun observeUVLightDuration() {
         viewModelScope.launch {
             _uvLightRepository.uvLightDuration.collectLatest { duration ->
-                uvLightDuration = duration
+                uiStateManager.updateUVLightState(uiState.value.uvLightOn, duration)
             }
         }
     }
@@ -263,7 +245,11 @@ class DashboardViewModel(
     private fun observeDiscovering() {
         viewModelScope.launch {
             _uvLightRepository.isDiscovering.collectLatest { discovering ->
-                isDiscovering = discovering
+                uiStateManager.updateConnectionState(
+                    connected = uiState.value.isConnected,
+                    status = uiState.value.connectionStatus,
+                    discovering = discovering
+                )
             }
         }
     }
@@ -271,12 +257,12 @@ class DashboardViewModel(
     private fun startBackgroundTasks() {
         // Delegate task management to BackgroundTaskManager
         taskManager.startStatusMonitoring(
-            shouldMonitor = { !isLoading && isConnected },
+            shouldMonitor = { !uiState.value.isLoading && uiState.value.isConnected },
             onStatusCheck = { checkUVLightStatus() }
         )
 
         taskManager.startDurationTracking(
-            shouldTrack = { uvLightOn && isConnected },
+            shouldTrack = { uiState.value.uvLightOn && uiState.value.isConnected },
             onUpdateDuration = { updateDuration() }
         )
     }
@@ -285,35 +271,34 @@ class DashboardViewModel(
         val result = uvLightController.getUVLightStatus()
         result.fold(
             onSuccess = { status ->
-                uvLightOn = status
+                uiStateManager.updateUVLightState(status, uiState.value.uvLightDuration)
                 // clear connection errors only
                 if (isConnectionError()) {
-                    error = null
+                    uiStateManager.clearError()
                 }
             },
             onFailure = { exception ->
-                if (!isLoading) {
-                    isConnected = false
-                    error = "Connection lost to device"
+                if (!uiState.value.isLoading) {
+                    uiStateManager.updateConnectionState(false, "Connection Lost")
+                    uiStateManager.setError("Connection lost to device")
                 }
             }
         )
     }
 
     private fun updateDuration() {
-        uvLightDuration = uvLightController.getCurrentDuration()
+        val currentDuration = uvLightController.getCurrentDuration()
+        uiStateManager.updateUVLightState(uiState.value.uvLightOn, currentDuration)
     }
 
     private fun isConnectionError(): Boolean {
-        return error?.contains("Connection") == true ||
-                error?.contains("not found") == true
+        return uiState.value.error?.contains("Connection") == true ||
+                uiState.value.error?.contains("not found") == true
     }
 
     private fun resetConnectionState() {
-        isConnected = false
-        uvLightOn = false
-        uvLightDuration = 0L
-        connectionStatus = "Disconnected"
+        uiStateManager.updateConnectionState(false, "Disconnected")
+        uiStateManager.updateUVLightState(false, 0L)
     }
 
     // MARK: - Cleanup
@@ -325,7 +310,7 @@ class DashboardViewModel(
     }
 }
 
-// MARK: - Manager Classes (Inner classes or separate files)
+// MARK: - Manager Classes
 
 private class UserManager {
     private val auth = FirebaseAuth.getInstance()

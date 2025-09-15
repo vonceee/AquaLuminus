@@ -10,6 +10,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -34,25 +36,33 @@ fun AquariumDashboard(
     onWaterTestClick: () -> Unit = {},
     dashboardViewModel: DashboardViewModel = createDashboardViewModel()
 ) {
-    // User data from ViewModel
-    val userName = dashboardViewModel.userName
-    val userPhotoUrl = dashboardViewModel.userPhotoUrl
+    val uiState by remember { dashboardViewModel.uiState }.collectAsState()
 
-    // UV-Light state from ViewModel
-    val uvLightOn = dashboardViewModel.uvLightOn
-    val uvLightDuration = dashboardViewModel.uvLightDuration
-    val isLoading = dashboardViewModel.isLoading
-    val isConnected = dashboardViewModel.isConnected
-    val error = dashboardViewModel.error
-
-    // Other aquarium data (you can move these to ViewModel later if needed)
-    val temperature = 24.5f
-    val waterClarity = 92
-    val systemStatus = SystemStatus(
-        type = StatusType.NORMAL,
-        message = "All Systems Operational"
+    DashboardContent(
+        uiState = uiState,
+        onProfileClick = onProfileClick,
+        onLogout = onLogout,
+        onScheduleCleanClick = onScheduleCleanClick,
+        onWaterTestClick = onWaterTestClick,
+        onUvLightToggle = { dashboardViewModel.toggleUVLight() },
+        onRefresh = { dashboardViewModel.refreshUVStatus() },
+        onClearError = { dashboardViewModel.clearError() },
+        uvLightRepository = dashboardViewModel.uvLightRepository
     )
+}
 
+@Composable
+private fun DashboardContent(
+    uiState: DashboardUiState,
+    onProfileClick: () -> Unit,
+    onLogout: () -> Unit,
+    onScheduleCleanClick: () -> Unit,
+    onWaterTestClick: () -> Unit,
+    onUvLightToggle: () -> Unit,
+    onRefresh: () -> Unit,
+    onClearError: () -> Unit,
+    uvLightRepository: UVLightRepository
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -60,48 +70,31 @@ fun AquariumDashboard(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header with User Greeting, Profile Picture, and Logout
         HeaderSection(
-            userName = userName,
-            userPhotoUrl = userPhotoUrl,
+            userName = uiState.userName,
+            userPhotoUrl = uiState.userPhotoUrl,
             onProfileClick = onProfileClick,
             onLogout = onLogout
         )
 
-        // UV Light Control
         UVLightControlCard(
-            uvLightOn = uvLightOn,
-            isLoading = isLoading,
-            isConnected = isConnected,
-            error = error,
-            uvLightDuration = uvLightDuration,
-            onUvLightToggle = { dashboardViewModel.toggleUVLight() },
-            onRefresh = { dashboardViewModel.refreshUVStatus() },
-            onClearError = { dashboardViewModel.clearError() }
+            uvLightOn = uiState.uvLightOn,
+            isLoading = uiState.isLoading,
+            isConnected = uiState.isConnected,
+            error = uiState.error,
+            uvLightDuration = uiState.uvLightDuration,
+            onUvLightToggle = onUvLightToggle,
+            onRefresh = onRefresh,
+            onClearError = onClearError
         )
 
-        // Environmental Monitoring
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            TemperatureCard(
-                temperature = temperature,
-                modifier = Modifier.weight(1f)
-            )
-            WaterClarityCard(
-                waterClarity = waterClarity,
-                modifier = Modifier.weight(1f)
-            )
-        }
+        EnvironmentalMonitoringSection()
 
-        // System Health Status
         SystemHealthCard(
-            systemStatus = systemStatus,
-            uvLightRepository = dashboardViewModel.uvLightRepository
+            systemStatus = getSystemStatus(),
+            uvLightRepository = uvLightRepository
         )
 
-        // Quick Actions
         QuickActionsCard(
             onScheduleCleanClick = onScheduleCleanClick,
             onWaterTestClick = onWaterTestClick
@@ -109,7 +102,31 @@ fun AquariumDashboard(
     }
 }
 
-// Helper function to create ViewModel with repository
+@Composable
+private fun EnvironmentalMonitoringSection() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        TemperatureCard(
+            temperature = getTemperature(),
+            modifier = Modifier.weight(1f)
+        )
+        WaterClarityCard(
+            waterClarity = getWaterClarity(),
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+// Data providers - can be moved to ViewModel later
+private fun getTemperature(): Float = 24.5f
+private fun getWaterClarity(): Int = 92
+private fun getSystemStatus(): SystemStatus = SystemStatus(
+    type = StatusType.NORMAL,
+    message = "All Systems Operational"
+)
+
 @Composable
 private fun createDashboardViewModel(): DashboardViewModel {
     val context = LocalContext.current

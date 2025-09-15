@@ -1,8 +1,8 @@
 package com.example.aqualuminus.ui.screens.dashboard
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 data class DashboardUiState(
     // Firebase User State
@@ -23,23 +23,45 @@ data class DashboardUiState(
     val error: String? = null
 )
 
-class DashboardUiStateHolder {
-    var uiState by mutableStateOf(DashboardUiState())
-        private set
+class DashboardUiStateManager {
+    private val _uiState = MutableStateFlow(DashboardUiState())
+    val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
-    fun updateUiState(update: DashboardUiState.() -> DashboardUiState) {
-        uiState = uiState.update()
+    fun updateState(update: DashboardUiState.() -> DashboardUiState) {
+        _uiState.value = _uiState.value.update()
     }
 
     fun clearError() {
-        uiState = uiState.copy(error = null)
+        _uiState.value = _uiState.value.copy(error = null)
     }
 
     fun setLoading(loading: Boolean) {
-        uiState = uiState.copy(isLoading = loading)
+        _uiState.value = _uiState.value.copy(isLoading = loading)
     }
 
     fun setError(errorMessage: String) {
-        uiState = uiState.copy(error = errorMessage)
+        _uiState.value = _uiState.value.copy(error = errorMessage)
+    }
+
+    fun updateUserInfo(name: String, photoUrl: String?) {
+        _uiState.value = _uiState.value.copy(
+            userName = name,
+            userPhotoUrl = photoUrl
+        )
+    }
+
+    fun updateUVLightState(isOn: Boolean, duration: Long) {
+        _uiState.value = _uiState.value.copy(
+            uvLightOn = isOn,
+            uvLightDuration = duration
+        )
+    }
+
+    fun updateConnectionState(connected: Boolean, status: String, discovering: Boolean = false) {
+        _uiState.value = _uiState.value.copy(
+            isConnected = connected,
+            connectionStatus = status,
+            isDiscovering = discovering
+        )
     }
 }
