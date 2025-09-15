@@ -83,7 +83,7 @@ private fun DashboardContent(
             isConnected = uiState.isConnected,
             error = uiState.error,
             uvLightDuration = uiState.uvLightDuration,
-            onUvLightToggle = onUvLightToggle,
+            onUvLightToggle = { _ -> onUvLightToggle() },
             onRefresh = onRefresh,
             onClearError = onClearError
         )

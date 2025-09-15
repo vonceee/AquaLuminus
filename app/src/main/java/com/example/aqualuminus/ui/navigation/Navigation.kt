@@ -1,7 +1,6 @@
 package com.example.aqualuminus.ui.navigation
 
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -33,34 +32,6 @@ fun AquariumNavGraph(
     onSignOut: () -> Unit,
     navController: NavHostController = rememberNavController()
 ) {
-    // auto-navigate based on auth state
-    LaunchedEffect(authState) {
-        when (authState) {
-            is AuthState.Authenticated -> {
-                // user is logged in, navigate to dashboard
-                navController.navigate(Screen.Dashboard.route) {
-                    popUpTo(Screen.Login.route) { inclusive = true }
-                    popUpTo(Screen.Register.route) { inclusive = true }
-                }
-            }
-            is AuthState.Unauthenticated -> {
-                // user is logged out, navigate to login
-                if (navController.currentDestination?.route == Screen.Dashboard.route ||
-                    navController.currentDestination?.route == Screen.Profile.route ||
-                    navController.currentDestination?.route == Screen.SchedulesList.route ||
-                    navController.currentDestination?.route?.startsWith(Screen.ScheduleClean.route) == true ||
-                    navController.currentDestination?.route == Screen.WaterTest.route) {
-                    navController.navigate(Screen.Login.route) {
-                        popUpTo(Screen.Dashboard.route) { inclusive = true }
-                        popUpTo(Screen.Profile.route) { inclusive = true }
-                        popUpTo(Screen.SchedulesList.route) { inclusive = true }
-                        popUpTo(Screen.ScheduleClean.route) { inclusive = true }
-                        popUpTo(Screen.WaterTest.route) { inclusive = true }
-                    }
-                }
-            }
-        }
-    }
 
     // determine start destination based on auth state
     val startDestination = when (authState) {

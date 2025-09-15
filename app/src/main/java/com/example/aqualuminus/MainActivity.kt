@@ -35,11 +35,9 @@ class MainActivity : ComponentActivity() {
                     val windowInsetsController =
                         WindowInsetsControllerCompat(window, view)
 
-                    // Set system bar icon colors
                     windowInsetsController.isAppearanceLightStatusBars = true
                     windowInsetsController.isAppearanceLightNavigationBars = true
 
-                    // Set system bar background colors
                     window.statusBarColor = android.graphics.Color.WHITE
                     window.navigationBarColor = android.graphics.Color.WHITE
                 }
@@ -50,7 +48,7 @@ class MainActivity : ComponentActivity() {
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .systemBarsPadding() // ✅ applies safe padding (system status bar + nav bar)
+                        .systemBarsPadding()
                 ) {
                     AquariumNavGraph(
                         authState = authState,
