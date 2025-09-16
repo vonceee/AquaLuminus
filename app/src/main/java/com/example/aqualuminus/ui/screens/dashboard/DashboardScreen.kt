@@ -19,6 +19,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.aqualuminus.data.repository.UVLightRepository
+import com.example.aqualuminus.ui.screens.dashboard.components.DeviceSelectionCard
 import com.example.aqualuminus.ui.screens.dashboard.components.HeaderSection
 import com.example.aqualuminus.ui.screens.dashboard.components.QuickActionsCard
 import com.example.aqualuminus.ui.screens.dashboard.components.SystemHealthCard
@@ -86,6 +87,21 @@ private fun DashboardContent(
             onUvLightToggle = { _ -> onUvLightToggle() },
             onRefresh = onRefresh,
             onClearError = onClearError
+        )
+
+        DeviceSelectionCard(
+            // Sample devices for UI demonstration
+            // In production, this would come from your ViewModel
+            onBulkToggle = {
+                // Handle bulk toggle action here
+                // This will be connected to your repository later
+                // For now, it's just a UI demonstration
+            },
+            onDeviceSelectionChange = { selectedDevices ->
+                // Handle device selection changes
+                // This could trigger UI updates or store selection state
+                // For now, it's just for UI demonstration
+            }
         )
 
         EnvironmentalMonitoringSection()
