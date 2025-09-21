@@ -41,7 +41,7 @@ fun UVLightControlCard(
     isLoading: Boolean,
     isConnected: Boolean,
     error: String?,
-    uvLightDuration: Long = 0L, // Add duration parameter
+    uvLightDuration: Long = 0L,
     onUvLightToggle: (Boolean) -> Unit,
     onRefresh: () -> Unit,
     onClearError: () -> Unit
@@ -86,7 +86,7 @@ fun UVLightControlCard(
                         color = MaterialTheme.colorScheme.onSurface
                     )
 
-                    // Connection indicator
+                    // Connection Indicator
                     if (!isConnected) {
                         Icon(
                             imageVector = Icons.Filled.Warning,
@@ -101,7 +101,7 @@ fun UVLightControlCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Status chip
+                    // Status Chip
                     AssistChip(
                         onClick = { },
                         label = {
@@ -161,42 +161,6 @@ fun UVLightControlCard(
                 }
             }
 
-            if (error != null) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color.Red.copy(alpha = 0.1f)
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        Color.Red.copy(alpha = 0.2f)
-                    ),
-                    elevation = CardDefaults.cardElevation(0.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = error,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Color.Red,
-                            modifier = Modifier.weight(1f)
-                        )
-                        TextButton(
-                            onClick = onClearError
-                        ) {
-                            Text("Dismiss")
-                        }
-                    }
-                }
-            }
-
             Spacer(modifier = Modifier.height(16.dp))
 
             // Switch Control
@@ -218,6 +182,42 @@ fun UVLightControlCard(
                 )
             }
 
+            if (error != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.Red.copy(alpha = 0.1f)
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp,
+                        Color.Red.copy(alpha = 0.2f)
+                    ),
+                    elevation = CardDefaults.cardElevation(0.dp),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "  " + error,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Red,
+                            modifier = Modifier.weight(1f)
+                        )
+                        TextButton(
+                            onClick = onClearError
+                        ) {
+                            Text("Dismiss")
+                        }
+                    }
+                }
+            }
+
             // UV Active Status with Timer
             if (uvLightOn && isConnected) {
                 Spacer(modifier = Modifier.height(16.dp))
@@ -236,7 +236,7 @@ fun UVLightControlCard(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(16.dp),
+                            .padding(8.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(

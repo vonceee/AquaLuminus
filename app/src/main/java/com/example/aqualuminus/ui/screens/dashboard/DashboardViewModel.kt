@@ -62,7 +62,7 @@ class DashboardViewModel(
 
     fun refreshUVStatus() {
         if (!uiState.value.isConnected) {
-            uiStateManager.setError("Not connected to device")
+            uiStateManager.setError("No Device Detected")
             return
         }
 

@@ -14,7 +14,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.net.InetAddress
 import java.util.concurrent.ConcurrentHashMap
 
 class UVLightRepository(private val context: Context) {
@@ -111,66 +110,6 @@ class UVLightRepository(private val context: Context) {
             connectToDevice(devices.first().ip)
         } else {
             Result.failure(Exception("No devices found"))
-        }
-    }
-
-    /**
-     * Scan local network for devices (alternative method)
-     */
-    suspend fun scanLocalNetwork(): List<DiscoveredDevice> {
-        val devices = mutableListOf<DiscoveredDevice>()
-
-        try {
-            // Get current WiFi network info
-            val wifiInfo = wifiManager.connectionInfo
-            val ipAddress = wifiInfo.ipAddress
-
-            // Convert IP to subnet (e.g., 192.168.1.x)
-            val subnet = String.format(
-                "%d.%d.%d.",
-                ipAddress and 0xff,
-                ipAddress shr 8 and 0xff,
-                ipAddress shr 16 and 0xff
-            )
-
-            _connectionStatus.value = "Scanning $subnet..."
-
-            // Scan subnet for devices (this is a simplified version)
-            // In a real app, you might want to use a more sophisticated approach
-            for (i in 1..254) {
-                try {
-                    val host = "$subnet$i"
-                    val addr = InetAddress.getByName(host)
-
-                    if (addr.isReachable(1000)) {
-                        // Try to connect and check if it's an AquaLuminus device
-                        if (isAquaLuminusDevice(host)) {
-                            devices.add(DiscoveredDevice("AquaLuminus", host, 80))
-                        }
-                    }
-                } catch (e: Exception) {
-                    // Continue scanning
-                }
-            }
-
-            _discoveredDevices.value = devices
-            _connectionStatus.value = "${devices.size} device(s) found"
-
-        } catch (e: Exception) {
-            _connectionStatus.value = "Network scan failed: ${e.message}"
-        }
-
-        return devices
-    }
-
-    private suspend fun isAquaLuminusDevice(ip: String): Boolean {
-        return try {
-            setupRetrofitForIP(ip)
-            val response = uvLightService?.getDeviceInfo()
-            response?.isSuccessful == true &&
-                    response.body()?.device?.contains("AquaLuminus", ignoreCase = true) == true
-        } catch (e: Exception) {
-            false
         }
     }
 
@@ -397,34 +336,13 @@ class UVLightRepository(private val context: Context) {
             // Clear any old setup mode connections
             disconnect()
 
-            // Method 1: Try mDNS discovery first (most reliable)
+            // mDNS discovery
             val discoveryResult = discoverAndConnect()
             if (discoveryResult.isSuccess) {
                 return discoveryResult
             }
 
-            // Method 2: If mDNS fails, scan local network
-            _connectionStatus.value = "Scanning network range..."
-            val scanResult = scanAndConnect()
-            if (scanResult.isSuccess) {
-                return scanResult
-            }
-
-            // Method 3: Last resort - try common IPs
-            val commonIPs = listOf(
-                "192.168.1.100", "192.168.1.101", "192.168.1.102",
-                "192.168.0.100", "192.168.0.101", "192.168.0.102",
-                "10.0.0.100", "10.0.0.101"
-            )
-
-            _connectionStatus.value = "Trying common IP addresses..."
-            for (ip in commonIPs) {
-                if (tryConnectToIP(ip)) {
-                    return Result.success(true)
-                }
-            }
-
-            Result.failure(Exception("Device not found on network. Make sure both phone and device are connected to the same WiFi."))
+            Result.failure(Exception("No Device Detected."))
 
         } catch (e: Exception) {
             Result.failure(e)
@@ -458,50 +376,6 @@ class UVLightRepository(private val context: Context) {
             }
 
             Result.failure(Exception("No devices found via discovery"))
-
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    /**
-     * Scan local network IP range for AquaLuminus device
-     */
-    private suspend fun scanAndConnect(): Result<Boolean> {
-        return try {
-            val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
-            val wifiInfo = wifiManager.connectionInfo
-            val ipAddress = wifiInfo.ipAddress
-
-            if (ipAddress == 0) {
-                return Result.failure(Exception("Not connected to WiFi"))
-            }
-
-            // Convert IP to subnet
-            val subnet = String.format(
-                "%d.%d.%d.",
-                ipAddress and 0xff,
-                ipAddress shr 8 and 0xff,
-                ipAddress shr 16 and 0xff
-            )
-
-            _connectionStatus.value = "Scanning $subnet..."
-
-            // Scan common device IP range (usually .100-120 for IoT devices)
-            val ipRange = (100..120) + (2..50) // Common ranges
-
-            for (lastOctet in ipRange) {
-                val testIP = "$subnet$lastOctet"
-
-                if (tryConnectToIP(testIP)) {
-                    return Result.success(true)
-                }
-
-                // Small delay to not overwhelm network
-                kotlinx.coroutines.delay(100)
-            }
-
-            Result.failure(Exception("Device not found in network scan"))
 
         } catch (e: Exception) {
             Result.failure(e)

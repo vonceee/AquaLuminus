@@ -3,6 +3,7 @@ package com.example.aqualuminus.ui.screens.dashboard.components
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,16 +17,24 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Devices
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -57,17 +66,26 @@ fun DeviceSelectionCard(
     onDeviceSelectionChange: (Set<String>) -> Unit = {},
     onBulkToggle: () -> Unit = {},
     onAddDevice: () -> Unit = {},
+    onRemoveDevice: (String) -> Unit = {},
+    onRemoveSelectedDevices: (Set<String>) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var localSelectedDevices by remember(selectedDevices) {
         mutableStateOf(selectedDevices)
     }
+    var isSelectionMode by remember { mutableStateOf(false) }
 
-    // Calculate if bulk action is available
+    // calculate if bulk action is available
     val connectedDevices = devices.filter { it.isConnected }
     val selectedConnectedDevices = connectedDevices.filter { it.id in localSelectedDevices }
     val canBulkToggle = selectedConnectedDevices.isNotEmpty() &&
             selectedConnectedDevices.all { it.uvLightOn == selectedConnectedDevices.first().uvLightOn }
+
+    val exitSelectionMode = {
+        isSelectionMode = false
+        localSelectedDevices = emptySet()
+        onDeviceSelectionChange(emptySet())
+    }
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -101,132 +119,104 @@ fun DeviceSelectionCard(
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
-                        text = "Device Control",
+                        text = if (isSelectionMode) "Select Devices" else "Device Control",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
-                // Device Count Badge
-                AssistChip(
-                    onClick = { },
-                    label = {
-                        Text(
-                            text = "${connectedDevices.size}/${devices.size} Online",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Medium
+                // Device Count Badge or Cancel Button
+                if (isSelectionMode) {
+                    IconButton(
+                        onClick = exitSelectionMode,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = "Cancel Selection",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
                         )
-                    },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = if (connectedDevices.size == devices.size)
-                            Color(0xFF22C55E).copy(alpha = 0.1f)
-                        else
-                            MaterialTheme.colorScheme.surfaceVariant,
-                        labelColor = if (connectedDevices.size == devices.size)
-                            Color(0xFF22C55E)
-                        else
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                    ),
-                    border = BorderStroke(
-                        1.dp,
-                        if (connectedDevices.size == devices.size)
-                            Color(0xFF22C55E).copy(alpha = 0.2f)
-                        else
-                            MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                )
+                    }
+                } else {
+                    AssistChip(
+                        onClick = { },
+                        label = {
+                            Text(
+                                text = "${connectedDevices.size}/${devices.size} Online",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Medium
+                            )
+                        },
+                        colors = AssistChipDefaults.assistChipColors(
+                            containerColor = if (connectedDevices.size == devices.size)
+                                Color(0xFF22C55E).copy(alpha = 0.1f)
+                            else
+                                MaterialTheme.colorScheme.surfaceVariant,
+                            labelColor = if (connectedDevices.size == devices.size)
+                                Color(0xFF22C55E)
+                            else
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        border = BorderStroke(
+                            1.dp,
+                            if (connectedDevices.size == devices.size)
+                                Color(0xFF22C55E).copy(alpha = 0.2f)
+                            else
+                                MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Bulk Action Controls
-//            if (localSelectedDevices.isNotEmpty()) {
-//                Card(
-//                    colors = CardDefaults.cardColors(
-//                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
-//                    ),
-//                    border = BorderStroke(
-//                        1.dp,
-//                        MaterialTheme.colorScheme.primary.copy(alpha = 0.2f)
-//                    ),
-//                    elevation = CardDefaults.cardElevation(0.dp),
-//                    shape = RoundedCornerShape(12.dp),
-//                    modifier = Modifier.fillMaxWidth()
-//                ) {
-//                    Row(
-//                        modifier = Modifier
-//                            .fillMaxWidth()
-//                            .padding(16.dp),
-//                        horizontalArrangement = Arrangement.SpaceBetween,
-//                        verticalAlignment = Alignment.CenterVertically
-//                    ) {
-//                        Column(
-//                            modifier = Modifier.weight(1f)
-//                        ) {
-//                            Text(
-//                                text = "${localSelectedDevices.size} devices selected",
-//                                style = MaterialTheme.typography.bodyMedium,
-//                                color = MaterialTheme.colorScheme.primary,
-//                                fontWeight = FontWeight.Medium
-//                            )
-//                            if (!canBulkToggle && selectedConnectedDevices.isNotEmpty()) {
-//                                Text(
-//                                    text = "Mixed UV states - cannot bulk toggle",
-//                                    style = MaterialTheme.typography.bodySmall,
-//                                    color = MaterialTheme.colorScheme.error,
-//                                    fontSize = 11.sp
-//                                )
-//                            }
-//                        }
-//
-//                        Row(
-//                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-//                            verticalAlignment = Alignment.CenterVertically
-//                        ) {
-//                            TextButton(
-//                                onClick = {
-//                                    localSelectedDevices = emptySet()
-//                                    onDeviceSelectionChange(emptySet())
-//                                }
-//                            ) {
-//                                Text(
-//                                    "Clear All",
-//                                    style = MaterialTheme.typography.bodySmall
-//                                )
-//                            }
-//
-//                            Button(
-//                                onClick = onBulkToggle,
-//                                enabled = canBulkToggle,
-//                                shape = RoundedCornerShape(8.dp),
-//                                modifier = Modifier.width(100.dp) // Fixed width to prevent distortion
-//                            ) {
-//                                Icon(
-//                                    imageVector = if (selectedConnectedDevices.firstOrNull()?.uvLightOn == true)
-//                                        Icons.Outlined.Lightbulb
-//                                    else
-//                                        Icons.Filled.Lightbulb,
-//                                    contentDescription = null,
-//                                    modifier = Modifier.size(16.dp)
-//                                )
-//                                Spacer(modifier = Modifier.width(4.dp))
-//                                Text(
-//                                    text = if (selectedConnectedDevices.firstOrNull()?.uvLightOn == true)
-//                                        "Turn Off"
-//                                    else
-//                                        "Turn On",
-//                                    fontSize = 12.sp,
-//                                    textAlign = TextAlign.Center
-//                                )
-//                            }
-//                        }
-//                    }
-//                }
-//
-//                Spacer(modifier = Modifier.height(16.dp))
-//            }
+            // Selection Mode Controls
+            if (isSelectionMode && localSelectedDevices.isNotEmpty()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "${localSelectedDevices.size} selected",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    OutlinedButton(
+                        onClick = {
+                            onRemoveSelectedDevices(localSelectedDevices)
+                            exitSelectionMode()
+                        },
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        ),
+                        border = BorderStroke(
+                            1.dp,
+                            MaterialTheme.colorScheme.error.copy(alpha = 0.5f)
+                        ),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Delete,
+                            contentDescription = "Remove Selected",
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "Remove All Selected",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+            }
 
             // Device List with Add Device Card
             LazyColumn(
@@ -235,11 +225,12 @@ fun DeviceSelectionCard(
             ) {
                 items(
                     items = devices,
-                    key = { it.id }   // 👈 Add this line
+                    key = { it.id }
                 ) { device ->
                     DeviceItem(
                         device = device,
                         isSelected = device.id in localSelectedDevices,
+                        isSelectionMode = isSelectionMode,
                         canSelect = canSelectDevice(device, localSelectedDevices, devices),
                         onSelectionChange = { isSelected ->
                             val newSelection = if (isSelected) {
@@ -249,8 +240,18 @@ fun DeviceSelectionCard(
                             }
                             localSelectedDevices = newSelection
                             onDeviceSelectionChange(newSelection)
-                        }
+                        },
+                        onEnterSelectionMode = {
+                            isSelectionMode = true
+                            localSelectedDevices = setOf(device.id)
+                            onDeviceSelectionChange(setOf(device.id))
+                        },
+                        onRemoveDevice = onRemoveDevice
                     )
+                }
+
+                item {
+                    AddDeviceCard(onAddDevice = onAddDevice)
                 }
             }
         }
@@ -261,15 +262,22 @@ fun DeviceSelectionCard(
 private fun DeviceItem(
     device: DeviceInfo,
     isSelected: Boolean,
+    isSelectionMode: Boolean,
     canSelect: Boolean,
-    onSelectionChange: (Boolean) -> Unit
+    onSelectionChange: (Boolean) -> Unit,
+    onEnterSelectionMode: () -> Unit,
+    onRemoveDevice: (String) -> Unit
 ) {
+    var showDropdownMenu by remember { mutableStateOf(false) }
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .alpha(if (canSelect || isSelected) 1f else 0.6f)
-            .clickable(enabled = canSelect || isSelected) {
-                onSelectionChange(!isSelected)
+            .alpha(if (canSelect || isSelected || !isSelectionMode) 1f else 0.6f)
+            .clickable(enabled = canSelect || isSelected || !isSelectionMode) {
+                if (isSelectionMode) {
+                    onSelectionChange(!isSelected)
+                }
             },
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected)
@@ -298,19 +306,21 @@ private fun DeviceItem(
         ) {
             Row(
                 modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(8.dp), // Reduced from 12.dp
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Selection Checkbox
-                Checkbox(
-                    checked = isSelected,
-                    onCheckedChange = onSelectionChange,
-                    enabled = canSelect || isSelected,
-                    colors = CheckboxDefaults.colors(
-                        checkedColor = MaterialTheme.colorScheme.primary
-                    ),
-                    modifier = Modifier.padding(end = 4.dp) // Reduced padding
-                )
+                // Selection Checkbox - only visible in selection mode
+                if (isSelectionMode) {
+                    Checkbox(
+                        checked = isSelected,
+                        onCheckedChange = onSelectionChange,
+                        enabled = canSelect || isSelected,
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = MaterialTheme.colorScheme.primary
+                        ),
+                        modifier = Modifier.padding(end = 4.dp)
+                    )
+                }
 
                 // Device Info
                 Column(
@@ -341,89 +351,142 @@ private fun DeviceItem(
                 }
             }
 
-            // Status indicators
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+            // Status Indicators and Menu
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Connection status
-                AssistChip(
-                    onClick = { },
-                    label = {
-                        Text(
-                            text = if (device.isConnected) "ONLINE" else "OFFLINE",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 9.sp
-                        )
-                    },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = if (device.isConnected)
-                            Color(0xFF22C55E).copy(alpha = 0.1f)
-                        else
-                            Color(0xFFEF4444).copy(alpha = 0.1f),
-                        labelColor = if (device.isConnected)
-                            Color(0xFF22C55E)
-                        else
-                            Color(0xFFEF4444)
-                    ),
-                    border = BorderStroke(
-                        0.5.dp,
-                        if (device.isConnected)
-                            Color(0xFF22C55E).copy(alpha = 0.3f)
-                        else
-                            Color(0xFFEF4444).copy(alpha = 0.3f)
-                    ),
-                    shape = RoundedCornerShape(6.dp),
-                    modifier = Modifier.height(20.dp)
-                )
-
-                // UV status (only if connected)
-                if (device.isConnected) {
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    // Connection Status
                     AssistChip(
                         onClick = { },
                         label = {
-                            Row(
-                                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Lightbulb,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(10.dp),
-                                    tint = if (device.uvLightOn)
-                                        Color(0xFF3B82F6)
-                                    else
-                                        MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                Text(
-                                    text = if (device.uvLightOn) "ON" else "OFF",
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 9.sp
-                                )
-                            }
+                            Text(
+                                text = if (device.isConnected) "ONLINE" else "OFFLINE",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 8.sp
+                            )
                         },
                         colors = AssistChipDefaults.assistChipColors(
-                            containerColor = if (device.uvLightOn)
-                                Color(0xFF3B82F6).copy(alpha = 0.1f)
+                            containerColor = if (device.isConnected)
+                                Color(0xFF22C55E).copy(alpha = 0.1f)
                             else
-                                MaterialTheme.colorScheme.surfaceVariant,
-                            labelColor = if (device.uvLightOn)
-                                Color(0xFF3B82F6)
+                                Color(0xFFEF4444).copy(alpha = 0.1f),
+                            labelColor = if (device.isConnected)
+                                Color(0xFF22C55E)
                             else
-                                MaterialTheme.colorScheme.onSurfaceVariant
+                                Color(0xFFEF4444)
                         ),
                         border = BorderStroke(
                             0.5.dp,
-                            if (device.uvLightOn)
-                                Color(0xFF3B82F6).copy(alpha = 0.3f)
+                            if (device.isConnected)
+                                Color(0xFF22C55E).copy(alpha = 0.3f)
                             else
-                                MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                                Color(0xFFEF4444).copy(alpha = 0.3f)
                         ),
                         shape = RoundedCornerShape(6.dp),
-                        modifier = Modifier.height(20.dp)
+                        modifier = Modifier
+                            .height(20.dp)
+                            .width(66.dp)
                     )
+
+                    // UV Status (only if connected)
+                    if (device.isConnected) {
+                        AssistChip(
+                            onClick = { },
+                            label = {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(2.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Lightbulb,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(10.dp),
+                                        tint = if (device.uvLightOn)
+                                            Color(0xFF3B82F6)
+                                        else
+                                            MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Text(
+                                        text = if (device.uvLightOn) "ON" else "OFF",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 9.sp
+                                    )
+                                }
+                            },
+                            colors = AssistChipDefaults.assistChipColors(
+                                containerColor = if (device.uvLightOn)
+                                    Color(0xFF3B82F6).copy(alpha = 0.1f)
+                                else
+                                    MaterialTheme.colorScheme.surfaceVariant,
+                                labelColor = if (device.uvLightOn)
+                                    Color(0xFF3B82F6)
+                                else
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                            ),
+                            border = BorderStroke(
+                                0.5.dp,
+                                if (device.uvLightOn)
+                                    Color(0xFF3B82F6).copy(alpha = 0.3f)
+                                else
+                                    MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                            ),
+                            shape = RoundedCornerShape(6.dp),
+                            modifier = Modifier
+                                .height(20.dp)
+                                .width(66.dp)
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.height(20.dp))
+                    }
+                }
+
+                // Menu Button
+                if (!isSelectionMode) {
+                    Box {
+                        IconButton(
+                            onClick = { showDropdownMenu = true },
+                            modifier = Modifier.size(24.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.MoreVert,
+                                contentDescription = "More options",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = showDropdownMenu,
+                            onDismissRequest = { showDropdownMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Select") },
+                                onClick = {
+                                    showDropdownMenu = false
+                                    onEnterSelectionMode()
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        "Remove",
+                                        color = MaterialTheme.colorScheme.error
+                                    )
+                                },
+                                onClick = {
+                                    showDropdownMenu = false
+                                    onRemoveDevice(device.id)
+                                }
+                            )
+                        }
+                    }
                 }
             }
         }
